@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5W1H - Claude Code & Kiro</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --bg-card-hover: #222230;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6; /* Purple */
+            --accent-secondary: #06b6d4; /* Cyan */
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            /* Subtle grid background */
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4 {
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header / Nav */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(13, 13, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        /* Hero Section */
+        #hero {
+            padding: 180px 0 100px;
+            text-align: center;
+            position: relative;
+        }
+
+        #hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            letter-spacing: -1px;
+            margin-bottom: 1.5rem;
+        }
+
+        #hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 2.5rem;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.8rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+        }
+
+        /* Problem Section */
+        .problem-banner {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 4rem auto;
+            max-width: 800px;
+        }
+
+        .problem-banner h3 {
+            text-align: center;
+            color: var(--accent-danger);
+            margin-bottom: 1.5rem;
+        }
+
+        .problem-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .problem-list li {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 1.1rem;
+        }
+
+        /* Overview Architecture */
+        section {
+            padding: 5rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: transform 0.3s, background 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: var(--bg-card-hover);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .card-title {
+            color: var(--accent-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Concept 5W1H Style */
+        .concept-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .concept-header h3 {
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .grid-5w1h {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .box-5w {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .box-5w.how { border-color: var(--accent-secondary); grid-column: 1 / -1; }
+        
+        .box-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .box-label span:last-child { color: white; }
+
+        /* Code & Pre */
+        pre {
+            background: #000;
+            padding: 1.5rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1.5rem 0;
+        }
+
+        code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: #a5b4fc;
+        }
+        
+        .inline-code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #fca5a5;
+        }
+
+        /* Comparison & Process Layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .panel-good { border-top: 4px solid var(--accent-success); }
+        .panel-bad { border-top: 4px solid var(--accent-danger); }
+
+        .process-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        @media(min-width: 768px) {
+            .process-steps {
+                flex-direction: row;
+            }
+        }
+
+        .step-card {
+            flex: 1;
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            background: var(--accent-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Table */
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+        }
+
+        th, td {
+            padding: 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.05);
+            font-weight: 800;
+            color: var(--accent-secondary);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        
+        /* Tree View */
+        .tree-view {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+            background: #000;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        .tree-view .file { color: #a5b4fc; }
+        .tree-view .folder { color: #fcd34d; font-weight: bold; }
+        .tree-view .comment { color: #6b7280; font-style: italic; }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 6rem 0;
+            background: linear-gradient(180deg, transparent, rgba(139, 92, 246, 0.1));
+            border-bottom: none;
+        }
+
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="#" class="logo">
+                    🤖 <span class="gradient-text">Claude & Kiro 5W1H</span>
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#overview">Tổng quan</a></li>
+                    <li><a href="#concepts">Khái niệm</a></li>
+                    <li><a href="#summary">Đối chiếu</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="hero">
+        <div class="container animate-on-scroll">
+            <h1>5W1H về <br><span class="gradient-text">Claude Code & Kiro</span></h1>
+            <p>Hiểu đúng các khái niệm cốt lõi để ứng dụng chính xác AI Tools trong Development Workflow.</p>
+            
+            <div class="tags">
+                <span class="tag">CLAUDE.md</span>
+                <span class="tag">AGENTS.md</span>
+                <span class="tag">Steering</span>
+                <span class="tag">Command</span>
+                <span class="tag">Skill</span>
+                <span class="tag">Hook</span>
+                <span class="tag">MCP</span>
+                <span class="tag">Subagent</span>
+            </div>
+
+            <div class="problem-banner animate-on-scroll delay-2">
+                <h3>❓ Vì sao bạn đang đọc trang này?</h3>
+                <ul class="problem-list">
+                    <li>❌ <span>Steering bạn đang dùng — sếp nói sai.</span></li>
+                    <li>❌ <span>Dùng <span class="inline-code">/review-fix</span> chạy 10 lần ra 10 lỗi khác nhau.</span></li>
+                    <li>❌ <span>AI mỗi ngày đẻ ra thêm 1 khái niệm mới — không theo kịp.</span></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Overview Map -->
+    <section id="overview">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>Bản đồ tổng quan</h2>
+                <p>8 khái niệm liên kết thế nào trong hệ sinh thái AI?</p>
+            </div>
+            
+            <div class="grid-4">
+                <div class="card animate-on-scroll delay-1">
+                    <span class="card-icon">📋</span>
+                    <div class="card-title">Lớp Context</div>
+                    <h3>Nói AI biết gì</h3>
+                    <p class="text-muted" style="margin-top: 1rem;">
+                        <strong>AGENTS.md:</strong> Universal (mọi tool)<br>
+                        <strong>CLAUDE.md:</strong> Claude Code entrypoint<br>
+                        <strong>Spec / Docs:</strong> Load khi cần
+                    </p>
+                </div>
+                <div class="card animate-on-scroll delay-2">
+                    <span class="card-icon">⚙️</span>
+                    <div class="card-title">Lớp Behavior</div>
+                    <h3>Nói AI làm thế nào</h3>
+                    <p class="text-muted" style="margin-top: 1rem;">
+                        <strong>Steering (Kiro):</strong> Product/Tech/Structure + Custom rules.<br>
+                        <strong>Subagent:</strong> Agent con chuyên trách (security, architect).
+                    </p>
+                </div>
+                <div class="card animate-on-scroll delay-3">
+                    <span class="card-icon">🎬</span>
+                    <div class="card-title">Lớp Action</div>
+                    <h3>Cách kích hoạt</h3>
+                    <p class="text-muted" style="margin-top: 1rem;">
+                        <strong>Command:</strong> Workflow user gõ<br>
+                        <strong>Skill:</strong> AI tự kích hoạt<br>
+                        <strong>Hook:</strong> Trigger tự động
+                    </p>
+                </div>
+                <div class="card animate-on-scroll delay-1">
+                    <span class="card-icon">🌐</span>
+                    <div class="card-title">Lớp Integration</div>
+                    <h3>Kết nối ra ngoài</h3>
+                    <p class="text-muted" style="margin-top: 1rem;">
+                        <strong>MCP:</strong> Bridge tới hệ thống nội bộ (Jira, Confluence, GitLab, Slack...)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Detailed Concepts -->
+    <section id="concepts">
+        <div class="container">
+            
+            <!-- 1. CLAUDE.md -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>1. CLAUDE.md</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>File markdown ở ROOT project. Là "system prompt" tự load của Claude Code.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Cho AI biết ta là ai, code gì, convention gì. Tránh khởi tạo session "mù".</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Dev dùng Claude Code (CLI/IDE). Tạo riêng cho project của mình.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>MỖI session mới. Tự động load.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>Tại ROOT project <span class="inline-code">&lt;project&gt;/CLAUDE.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Viết ngắn gọn: identity, stack, conventions, reference qua <span class="inline-code">@file</span>.</div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card panel-good">
+                        <h4>✅ NÊN — Ngắn, focus hành vi</h4>
+<pre><code># Return Home BE
+## Identity
+- Service: API trả hàng (PHARMACY)
+- Stack: .NET 8, EF Core, MediatR
+
+## Conventions
+- Entity: OrderReturn
+- Async only — NO .Result
+- [Authorize] mandatory
+
+## References
+@../docs/conventions.md</code></pre>
+                    </div>
+                    <div class="card panel-bad">
+                        <h4>❌ KHÔNG NÊN — Nhồi nhét</h4>
+                        <ul style="margin-left: 1.5rem; color: var(--text-muted); padding-top: 1rem;">
+                            <li>Paste 30 trang API docs → <strong>Context bloat</strong></li>
+                            <li>Paste current sprint state, task progress → <strong>AI nói dối vì state cũ</strong></li>
+                            <li>Copy rule trùng với linter → <strong>Tốn focus</strong></li>
+                            <li>Viết mơ hồ "write good code" → <strong>Vô dụng</strong></li>
+                        </ul>
+                        <p style="margin-top:1rem; color:var(--accent-danger);"><em>Rule of thumb: &lt; 5KB.</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. AGENTS.md -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>2. AGENTS.md</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Chuẩn UNIVERSAL. File markdown mọi tool (Claude, Cursor, Aider...) đều đọc.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tránh duplicate context. Viết 1 lần, mọi tool hiểu.</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Team đa-tool, hoặc người muốn ổn định trước thay đổi AI.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>Khi team dùng > 1 AI tool song song.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>ROOT project (cùng cấp CLAUDE.md)</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Tạo AGENTS.md chứa rules chung. Trong CLAUDE.md gọi <span class="inline-code">@AGENTS.md</span>.</div>
+                </div>
+            </div>
+
+            <!-- 3. Steering -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>3. Steering <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(Dành cho Kiro)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Tài liệu định hướng HÀNH VI lâu dài trong Kiro. (Không phải database API).</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tách biệt "hành vi cố định" và "context tạm thời" qua mọi session.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.kiro/steering/</span> (product, tech, structure.md)</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Frontmatter <span class="inline-code">inclusion: auto/always</span>. Giữ NGẮN. Tham chiếu qua <span class="inline-code">#[[file]]</span>.</div>
+                </div>
+                
+                <div class="card" style="background: rgba(6, 182, 212, 0.05); border-color: rgba(6, 182, 212, 0.3);">
+                    <h4 style="color: var(--accent-secondary)">💡 Phân loại đúng Documents:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <strong>Steering (.kiro/steering)</strong><br>
+                            <span class="text-muted">Identity, Tech stack chính, Conventions ko linter, Quyết định cố định.</span>
+                        </div>
+                        <div>
+                            <strong>Docs (docs/)</strong><br>
+                            <span class="text-muted">API reference, Business rules detailed, ADRs.</span>
+                        </div>
+                        <div>
+                            <strong>Specs (specs/)</strong><br>
+                            <span class="text-muted">Requirements, Design, State/Progress (thay đổi liên tục).</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Slash Command -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>4. Slash Command <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(/command-name)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Workflow rút gọn. Gõ <span class="inline-code">/name</span> để chạy script prompt định sẵn.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Đóng gói workflow lặp lại, tránh paste prompt dài mỗi lần.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/commands/&lt;name&gt;.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Tạo file markdown với frontmatter. Dùng biến <span class="inline-code">$ARGUMENTS</span>.</div>
+                </div>
+
+                <div class="card">
+                    <h4>📄 Ví dụ: /spec-from-jira</h4>
+<pre><code>---
+description: Tạo spec từ Jira ticket
+argument-hint: "&lt;JIRA-ID&gt;"
+---
+Tạo spec đầy đủ cho $ARGUMENTS.
+Bước 1: Dùng MCP đọc Jira issue_key: $ARGUMENTS
+Bước 2: Đọc Confluence linked docs
+Bước 3: Tạo specs/{slug}/ (requirements, design, tasks)
+Bước 4: Confirm trước khi save.</code></pre>
+                    <p style="margin-top: 1rem; color: var(--text-muted)">Cách dùng trong chat: <span class="inline-code">/spec-from-jira FC-53161</span></p>
+                </div>
+            </div>
+
+            <!-- 5. Skill -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>5. Skill</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Module "kỹ năng" đóng gói. AI tự kích hoạt khi tình huống match.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>User không cần nhớ lệnh (khác Command). Tốt cho capability đặc thù (pptx, excel).</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/skills/&lt;name&gt;/SKILL.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Folder chứa SKILL.md (mô tả trigger) + các script/template helper đi kèm.</div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <h4>📁 Cấu trúc một Skill (vd: tạo pptx)</h4>
+                        <div class="tree-view">
+<span class="folder">pptx/</span>
+├── <span class="file">SKILL.md</span>             <span class="comment">← Triggers + workflow</span>
+├── <span class="file">editing.md</span>           <span class="comment">← Sub-guide</span>
+├── <span class="folder">scripts/</span>
+│   ├── <span class="file">thumbnail.py</span>     <span class="comment">← Helper scripts</span>
+└── <span class="folder">resources/</span>
+    └── <span class="comment">(templates...)</span>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h4>🎯 Skill vs Command</h4>
+                        <p><strong>Command:</strong> User CHỦ ĐỘNG gõ. 1 prompt cố định. Cho workflow user-triggered.</p>
+                        <hr style="border:0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+                        <p><strong>Skill:</strong> AI TỰ kích hoạt khi cần. Gồm nhiều files/scripts. Tốt cho capability theo file type/domain (cần in sẵn best practice).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Hook -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>6. Hook</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Trigger TỰ ĐỘNG chạy command khi có event xảy ra.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tự động hóa boring tasks (format, lint, log, check secret).</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/settings.json</span> hoặc <span class="inline-code">.kiro/hooks/</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Định nghĩa matcher (vd: PostToolUse) + shell command để chạy.</div>
+                </div>
+
+                <h4 style="margin-bottom: 1.5rem; text-align: center;">⚠️ Đừng nhầm 3 loại Hook này</h4>
+                <div class="process-steps">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h4>Claude Code Hook</h4>
+                        <p class="text-muted" style="margin-bottom: 1rem;">Trong session Claude Code</p>
+                        <span class="inline-code" style="display:block; margin-bottom: 1rem;">.claude/settings.json</span>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Auto-format (<span class="inline-code">dotnet format</span>) sau khi Claude sửa file (PostToolUse).</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h4>Kiro Hook</h4>
+                        <p class="text-muted" style="margin-bottom: 1rem;">User trigger thủ công/scheduled</p>
+                        <span class="inline-code" style="display:block; margin-bottom: 1rem;">.kiro/hooks/*.kiro.hook</span>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Update docs hàng tuần, generate Merge Request summary.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h4>OS Cron Task</h4>
+                        <p class="text-muted" style="margin-bottom: 1rem;">Chạy ngầm mức OS</p>
+                        <span class="inline-code" style="display:block; margin-bottom: 1rem;">crontab / launchd</span>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Fetch data định kỳ bằng script bash (every Mon 9am).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. MCP -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>7. MCP <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(Model Context Protocol)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Giao thức chuẩn để AI giao tiếp với "tools bên ngoài" (Database, APIs).</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Giúp AI truy cập Jira, Confluence, Git... mà không cần dev tự code tích hợp.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>Config trong <span class="inline-code">.claude/settings.json</span> hoặc <span class="inline-code">.kiro/settings/mcp.json</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Khai báo server URL & tokens. AI sẽ TỰ DISCOVER list tools (vd: jira_get_issue).</div>
+                </div>
+
+                <div class="card">
+                    <h4>⚙️ Cấu hình MCP (Ví dụ)</h4>
+<pre><code>{
+  "mcpServers": {
+    "company-context": {
+      "url": "https://mcp.domain.com/mcp",
+      "headers": {
+        "X-GitLab-Token": "${GITLAB_TOKEN}",
+        "X-Jira-Token": "${JIRA_TOKEN}"
+      }
+    }
+  }
+}</code></pre>
+                    <p style="color: var(--accent-danger); font-weight: bold;">⚠️ Lưu ý: Add mcp.json vào .gitignore, KHÔNG commit token lên Git!</p>
+                </div>
+            </div>
+
+            <!-- 8. Subagent -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>8. Subagent</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Agent CON với context riêng, tools giới hạn, system prompt chuyên biệt.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tránh "làm bẩn" context chính khi cần deep dive (vd: audit security).</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/agents/&lt;name&gt;.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Gọi qua <span class="inline-code">@subagent-name</span> hoặc Claude tự delegate. Output là bản tóm tắt trả về agent chính.</div>
+                </div>
+                
+                <div class="card" style="background: rgba(139, 92, 246, 0.05);">
+                    <h4 style="color: var(--accent-primary)">🎯 Subagent vs Skill</h4>
+                    <p style="margin-bottom: 0.5rem"><strong>Skill</strong> = Capability (Cách làm một việc cụ thể).</p>
+                    <p><strong>Subagent</strong> = Persona (Góc nhìn chuyên môn - vd: Security Reviewer, Architect. Không được phép sửa code, chỉ đọc và tư vấn).</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Summary Table Section -->
+    <section id="summary">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>Bảng Đối Chiếu</h2>
+                <p>Tóm tắt nhanh để phân biệt 8 khái niệm</p>
+            </div>
+            
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Khái niệm</th>
+                            <th>Đặt ở đâu</th>
+                            <th>Kích hoạt</th>
+                            <th>Để làm gì?</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AGENTS.md</strong></td>
+                            <td>Project root</td>
+                            <td>Auto load</td>
+                            <td>Universal context (chung mọi AI)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CLAUDE.md</strong></td>
+                            <td>Project root</td>
+                            <td>Auto load</td>
+                            <td>Entry point context cho Claude Code</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Steering</strong></td>
+                            <td><span class="inline-code">.kiro/steering/*.md</span></td>
+                            <td>Auto / Manual</td>
+                            <td>Hành vi AI lâu dài (Kiro)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Slash Command</strong></td>
+                            <td><span class="inline-code">.claude/commands/*.md</span></td>
+                            <td>User gõ <span class="inline-code">/name</span></td>
+                            <td>Workflow rút gọn, lặp lại</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Skill</strong></td>
+                            <td><span class="inline-code">.claude/skills/*/SKILL.md</span></td>
+                            <td>AI <strong>tự</strong> kích hoạt</td>
+                            <td>Capability đóng gói (script, best practice)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hook</strong></td>
+                            <td><span class="inline-code">settings.json</span> (hooks)</td>
+                            <td>Theo event</td>
+                            <td>Tự động hóa task (format, lint)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MCP</strong></td>
+                            <td><span class="inline-code">settings.json</span> (mcpServers)</td>
+                            <td>AI gọi tool</td>
+                            <td>Cầu nối ra API / Tools ngoài</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Subagent</strong></td>
+                            <td><span class="inline-code">.claude/agents/*.md</span></td>
+                            <td><span class="inline-code">@name</span> hoặc delegate</td>
+                            <td>Persona chuyên môn, không nhiễu context</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section animate-on-scroll">
+        <div class="container">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Sẵn sàng tối ưu Workflow?</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">Bắt đầu bằng việc tạo file <span class="inline-code" style="color: white">CLAUDE.md</span> đầu tiên cho project của bạn.</p>
+            <button class="btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">Lên đầu trang 🚀</button>
+        </div>
+    </section>
+
+    <script>
+        // Intersection Observer for scroll animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.15
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // Optional: Stop observing once animated
+                        // observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            const elementsToAnimate = document.querySelectorAll('.animate-on-scroll');
+            elementsToAnimate.forEach(el => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
