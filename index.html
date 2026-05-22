@@ -17,6 +17,7 @@
             --accent-secondary: #06b6d4; /* Cyan */
             --accent-success: #10b981;
             --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
             --border-color: rgba(255, 255, 255, 0.1);
             --font-sans: 'Inter', sans-serif;
             --font-mono: 'Fira Code', monospace;
@@ -145,6 +146,8 @@
             font-size: 0.85rem;
             font-weight: 600;
             border: 1px solid rgba(6, 182, 212, 0.2);
+            display: inline-flex;
+            align-items: center;
         }
 
         /* Problem Section */
@@ -190,6 +193,12 @@
 
         .section-header h2 {
             font-size: 2.5rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
         }
 
         .grid-4 {
@@ -382,6 +391,20 @@
         .tree-view .folder { color: #fcd34d; font-weight: bold; }
         .tree-view .comment { color: #6b7280; font-style: italic; }
 
+        /* Combination Workflow */
+        .workflow-item {
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+        }
+
+        .workflow-item .tag {
+            min-width: 80px;
+            justify-content: center;
+            padding: 0.3rem 0.6rem;
+        }
+
         /* CTA */
         .cta-section {
             text-align: center;
@@ -439,6 +462,7 @@
                 <ul class="nav-links">
                     <li><a href="#overview">Tổng quan</a></li>
                     <li><a href="#concepts">Khái niệm</a></li>
+                    <li><a href="#combination">Quy trình</a></li>
                     <li><a href="#summary">Đối chiếu</a></li>
                 </ul>
             </nav>
@@ -460,6 +484,8 @@
                 <span class="tag">Hook</span>
                 <span class="tag">MCP</span>
                 <span class="tag">Subagent</span>
+                <span class="tag" style="border-color: rgba(16, 185, 129, 0.4); color: var(--accent-success);">Spec</span>
+                <span class="tag" style="border-color: rgba(245, 158, 11, 0.4); color: var(--accent-warning);">Power</span>
             </div>
 
             <div class="problem-banner animate-on-scroll delay-2">
@@ -478,7 +504,7 @@
         <div class="container">
             <div class="section-header animate-on-scroll">
                 <h2>Bản đồ tổng quan</h2>
-                <p>8 khái niệm liên kết thế nào trong hệ sinh thái AI?</p>
+                <p>10 khái niệm liên kết thế nào trong hệ sinh thái AI?</p>
             </div>
             
             <div class="grid-4">
@@ -498,7 +524,7 @@
                     <h3>Nói AI làm thế nào</h3>
                     <p class="text-muted" style="margin-top: 1rem;">
                         <strong>Steering (Kiro):</strong> Product/Tech/Structure + Custom rules.<br>
-                        <strong>Subagent:</strong> Agent con chuyên trách (security, architect).
+                        <strong>Subagent:</strong> Agent con chuyên trách.
                     </p>
                 </div>
                 <div class="card animate-on-scroll delay-3">
@@ -508,7 +534,7 @@
                     <p class="text-muted" style="margin-top: 1rem;">
                         <strong>Command:</strong> Workflow user gõ<br>
                         <strong>Skill:</strong> AI tự kích hoạt<br>
-                        <strong>Hook:</strong> Trigger tự động
+                        <strong>Hook:</strong> Trigger tự động / Nút bấm
                     </p>
                 </div>
                 <div class="card animate-on-scroll delay-1">
@@ -516,7 +542,8 @@
                     <div class="card-title">Lớp Integration</div>
                     <h3>Kết nối ra ngoài</h3>
                     <p class="text-muted" style="margin-top: 1rem;">
-                        <strong>MCP:</strong> Bridge tới hệ thống nội bộ (Jira, Confluence, GitLab, Slack...)
+                        <strong>MCP:</strong> Bridge raw tới hệ thống nội bộ.<br>
+                        <strong>Power:</strong> Plugin Kiro (Figma, Postman...)
                     </p>
                 </div>
             </div>
@@ -593,8 +620,9 @@
                 <div class="grid-5w1h">
                     <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Tài liệu định hướng HÀNH VI lâu dài trong Kiro. (Không phải database API).</div>
                     <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tách biệt "hành vi cố định" và "context tạm thời" qua mọi session.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>3 mode: Always (mọi lúc) • File Match (khớp pattern) • Manual (gõ #tag).</div>
                     <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.kiro/steering/</span> (product, tech, structure.md)</div>
-                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Frontmatter <span class="inline-code">inclusion: auto/always</span>. Giữ NGẮN. Tham chiếu qua <span class="inline-code">#[[file]]</span>.</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Frontmatter <span class="inline-code">inclusion: always/fileMatch/manual</span>. Giữ NGẮN. Tham chiếu qua <span class="inline-code">#[[file]]</span>.</div>
                 </div>
                 
                 <div class="card" style="background: rgba(6, 182, 212, 0.05); border-color: rgba(6, 182, 212, 0.3);">
@@ -683,10 +711,10 @@ Bước 4: Confirm trước khi save.</code></pre>
                     <h3>6. Hook</h3>
                 </div>
                 <div class="grid-5w1h">
-                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Trigger TỰ ĐỘNG chạy command khi có event xảy ra.</div>
-                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tự động hóa boring tasks (format, lint, log, check secret).</div>
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Trigger TỰ ĐỘNG chạy action khi có event xảy ra. Hoặc nút bấm thủ công.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tự động hóa boring tasks (format, lint). Đóng gói quy trình thành 1 nút.</div>
                     <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/settings.json</span> hoặc <span class="inline-code">.kiro/hooks/</span></div>
-                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Định nghĩa matcher (vd: PostToolUse) + shell command để chạy.</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Định nghĩa matcher (event/regex) + action (shell command / askAgent).</div>
                 </div>
 
                 <h4 style="margin-bottom: 1.5rem; text-align: center;">⚠️ Đừng nhầm 3 loại Hook này</h4>
@@ -696,14 +724,14 @@ Bước 4: Confirm trước khi save.</code></pre>
                         <h4>Claude Code Hook</h4>
                         <p class="text-muted" style="margin-bottom: 1rem;">Trong session Claude Code</p>
                         <span class="inline-code" style="display:block; margin-bottom: 1rem;">.claude/settings.json</span>
-                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Auto-format (<span class="inline-code">dotnet format</span>) sau khi Claude sửa file (PostToolUse).</p>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Auto-format (<span class="inline-code">dotnet format</span>) sau khi sửa file (PostToolUse).</p>
                     </div>
                     <div class="step-card">
                         <div class="step-number">2</div>
                         <h4>Kiro Hook</h4>
-                        <p class="text-muted" style="margin-bottom: 1rem;">User trigger thủ công/scheduled</p>
+                        <p class="text-muted" style="margin-bottom: 1rem;">User trigger thủ công / Event</p>
                         <span class="inline-code" style="display:block; margin-bottom: 1rem;">.kiro/hooks/*.kiro.hook</span>
-                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Update docs hàng tuần, generate Merge Request summary.</p>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Bấm nút để update docs, generate MR summary.</p>
                     </div>
                     <div class="step-card">
                         <div class="step-number">3</div>
@@ -722,9 +750,9 @@ Bước 4: Confirm trước khi save.</code></pre>
                 </div>
                 <div class="grid-5w1h">
                     <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Giao thức chuẩn để AI giao tiếp với "tools bên ngoài" (Database, APIs).</div>
-                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Giúp AI truy cập Jira, Confluence, Git... mà không cần dev tự code tích hợp.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Giúp AI truy cập Jira, Confluence, Git... mà không cần dev tự code.</div>
                     <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>Config trong <span class="inline-code">.claude/settings.json</span> hoặc <span class="inline-code">.kiro/settings/mcp.json</span></div>
-                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Khai báo server URL & tokens. AI sẽ TỰ DISCOVER list tools (vd: jira_get_issue).</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Khai báo server URL & tokens. AI sẽ TỰ DISCOVER list tools.</div>
                 </div>
 
                 <div class="card">
@@ -753,16 +781,181 @@ Bước 4: Confirm trước khi save.</code></pre>
                     <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Agent CON với context riêng, tools giới hạn, system prompt chuyên biệt.</div>
                     <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tránh "làm bẩn" context chính khi cần deep dive (vd: audit security).</div>
                     <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/agents/&lt;name&gt;.md</span></div>
-                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Gọi qua <span class="inline-code">@subagent-name</span> hoặc Claude tự delegate. Output là bản tóm tắt trả về agent chính.</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Gọi qua <span class="inline-code">@subagent-name</span> hoặc Claude tự delegate.</div>
                 </div>
                 
                 <div class="card" style="background: rgba(139, 92, 246, 0.05);">
                     <h4 style="color: var(--accent-primary)">🎯 Subagent vs Skill</h4>
                     <p style="margin-bottom: 0.5rem"><strong>Skill</strong> = Capability (Cách làm một việc cụ thể).</p>
-                    <p><strong>Subagent</strong> = Persona (Góc nhìn chuyên môn - vd: Security Reviewer, Architect. Không được phép sửa code, chỉ đọc và tư vấn).</p>
+                    <p><strong>Subagent</strong> = Persona (Góc nhìn chuyên môn - vd: Security Reviewer. Không sửa code, chỉ đọc/tư vấn).</p>
                 </div>
             </div>
 
+            <!-- 9. Spec -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>9. Spec</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Quy trình có cấu trúc để xây tính năng phức tạp: req → design → tasks.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Ép AI hiểu YÊU CẦU trước khi code. Có checkpoint confirm.</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Dev / BA / TechLead xử lý feature vượt khả năng 1 prompt.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>Feature sửa > 5 file hoặc có business logic phức tạp.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.kiro/specs/&lt;feature&gt;/</span> (chứa req, design, tasks.md)</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Bắt đầu spec workflow → AI hỏi req → viết design → chia tasks.</div>
+                </div>
+            </div>
+
+            <!-- 10. Power -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>10. Power <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(Kiro)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Plugin "siêu năng lực" cài 1 click vào Kiro kết nối dịch vụ ngoài.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Setup cực nhanh, có UI, không cần cấu hình token tay phức tạp.</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Team non-tech (BA/Design) hoặc Dev muốn dùng tool có sẵn (Figma, Postman).</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Mở Command Palette → "Configure Powers" → Chọn plugin → Cài.</div>
+                </div>
+
+                <div class="card">
+                    <h4>⚖️ Power vs MCP — Khác gì?</h4>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tiêu chí</th>
+                                    <th style="color: var(--accent-warning);">Power</th>
+                                    <th style="color: var(--accent-secondary);">MCP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Cài đặt</td>
+                                    <td>1 click qua UI</td>
+                                    <td>Sửa JSON config tay</td>
+                                </tr>
+                                <tr>
+                                    <td>Setup</td>
+                                    <td>Đã đóng gói sẵn</td>
+                                    <td>Khai báo URL + token thủ công</td>
+                                </tr>
+                                <tr>
+                                    <td>UX</td>
+                                    <td>Có giao diện</td>
+                                    <td>Raw — dev-facing</td>
+                                </tr>
+                                <tr>
+                                    <td>Tính linh hoạt</td>
+                                    <td>Chỉ các plugin có sẵn</td>
+                                    <td>Bất kỳ MCP server nào (Jira, GitLab cty)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top: 1rem; color: var(--text-muted);"><em>💡 Rule of thumb: Có Power → dùng Power (nhanh, đẹp). Không có Power → config MCP (linh hoạt, hệ thống nội bộ).</em></p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Workflow / Combination Section -->
+    <section id="combination" style="background-color: rgba(255, 255, 255, 0.02);">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>Quy trình thực tế (Combination)</h2>
+                <p>Mỗi concept đơn lẻ giải quyết 1 việc. Sức mạnh là khi ghép chúng lại.</p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card panel-good">
+                    <h4>👨‍💼 TechLead review MR</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item">
+                            <span class="tag">Hook</span>
+                            <span>TechLead PR Review — bấm nút</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Steering</span>
+                            <span>review-principles.md — tiêu chí</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">MCP</span>
+                            <span>gitlab — đọc MR diff</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">MCP</span>
+                            <span>ai-context — đọc Jira ticket</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Chat</span>
+                            <span>TechLead confirm/sửa kết quả</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-success); font-weight: 600;">
+                        ✅ Kết quả: MR review chuẩn hoá, không bỏ sót Jira context.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-secondary)">
+                    <h4>🛠️ Dev code feature mới</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item">
+                            <span class="tag">Spec</span>
+                            <span>Plan: requirements + design + tasks</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Steering</span>
+                            <span>AGENTS.md — convention</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">MCP</span>
+                            <span>ai-context — read Jira</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">MCP</span>
+                            <span>context7 — tra docs thư viện</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Hook</span>
+                            <span>Lint on Save — auto check</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-secondary); font-weight: 600;">
+                        ✅ Kết quả: Feature ship đúng spec, đúng convention, không miss requirement.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-primary)">
+                    <h4>🎨 Implement UI từ Figma</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item">
+                            <span class="tag">Power</span>
+                            <span>Figma — paste link, đọc design</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Steering</span>
+                            <span>component-naming rules</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Skill</span>
+                            <span>Create React Component template</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Chat</span>
+                            <span>Iterate UI với AI</span>
+                        </div>
+                        <div class="workflow-item">
+                            <span class="tag">Hook</span>
+                            <span>Format on Save</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-primary); font-weight: 600;">
+                        ✅ Kết quả: Component UI đúng thiết kế, đúng convention format chuẩn.
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -770,8 +963,8 @@ Bước 4: Confirm trước khi save.</code></pre>
     <section id="summary">
         <div class="container animate-on-scroll">
             <div class="section-header">
-                <h2>Bảng Đối Chiếu</h2>
-                <p>Tóm tắt nhanh để phân biệt 8 khái niệm</p>
+                <h2>Bảng Đối Chiếu (10 Khái Niệm)</h2>
+                <p>Tóm tắt nhanh để phân biệt</p>
             </div>
             
             <div class="table-wrapper">
@@ -794,13 +987,13 @@ Bước 4: Confirm trước khi save.</code></pre>
                         <tr>
                             <td><strong>CLAUDE.md</strong></td>
                             <td>Project root</td>
-                            <td>Auto load</td>
+                            <td>Auto load (Claude Code)</td>
                             <td>Entry point context cho Claude Code</td>
                         </tr>
                         <tr>
                             <td><strong>Steering</strong></td>
                             <td><span class="inline-code">.kiro/steering/*.md</span></td>
-                            <td>Auto / Manual</td>
+                            <td>Always / fileMatch / manual</td>
                             <td>Hành vi AI lâu dài (Kiro)</td>
                         </tr>
                         <tr>
@@ -817,21 +1010,33 @@ Bước 4: Confirm trước khi save.</code></pre>
                         </tr>
                         <tr>
                             <td><strong>Hook</strong></td>
-                            <td><span class="inline-code">settings.json</span> (hooks)</td>
-                            <td>Theo event</td>
-                            <td>Tự động hóa task (format, lint)</td>
+                            <td><span class="inline-code">settings.json</span> / <span class="inline-code">.kiro/hooks/</span></td>
+                            <td>Theo event hoặc nút bấm</td>
+                            <td>Tự động hóa task</td>
                         </tr>
                         <tr>
                             <td><strong>MCP</strong></td>
                             <td><span class="inline-code">settings.json</span> (mcpServers)</td>
                             <td>AI gọi tool</td>
-                            <td>Cầu nối ra API / Tools ngoài</td>
+                            <td>Cầu nối tools ngoài (raw)</td>
                         </tr>
                         <tr>
                             <td><strong>Subagent</strong></td>
                             <td><span class="inline-code">.claude/agents/*.md</span></td>
-                            <td><span class="inline-code">@name</span> hoặc delegate</td>
+                            <td><span class="inline-code">@name</span> hoặc auto delegate</td>
                             <td>Persona chuyên môn, không nhiễu context</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--accent-success);"><strong>Spec</strong></td>
+                            <td><span class="inline-code">.kiro/specs/&lt;feature&gt;/</span></td>
+                            <td>User mở spec workflow</td>
+                            <td>Plan tính năng có cấu trúc (Req -> Design)</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--accent-warning);"><strong>Power</strong></td>
+                            <td>Cài qua Configure Powers</td>
+                            <td>AI tự dùng khi cần</td>
+                            <td>Plugin đóng gói (Figma, Postman)</td>
                         </tr>
                     </tbody>
                 </table>
@@ -860,8 +1065,6 @@ Bước 4: Confirm trước khi save.</code></pre>
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('visible');
-                        // Optional: Stop observing once animated
-                        // observer.unobserve(entry.target);
                     }
                 });
             }, observerOptions);
