@@ -1,1 +1,1535 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5W1H - Claude Code, Kiro & Cursor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
 
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --bg-card-hover: #222230;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6; /* Purple */
+            --accent-secondary: #06b6d4; /* Cyan */
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
+            --accent-cursor: #ec4899; /* Pink for Cursor */
+            --border-color: rgba(255, 255, 255, 0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        h1, h2, h3, h4 { font-weight: 800; line-height: 1.2; margin-bottom: 1rem; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: rgba(13, 13, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        nav { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+
+        .logo { font-weight: 800; font-size: 1.2rem; color: white; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+
+        .nav-links { display: flex; gap: 1.6rem; list-style: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: color 0.3s; }
+        .nav-links a:hover { color: white; }
+
+        #hero { padding: 180px 0 100px; text-align: center; position: relative; }
+        #hero h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); letter-spacing: -1px; margin-bottom: 1.5rem; }
+        #hero p { font-size: 1.2rem; color: var(--text-muted); max-width: 700px; margin: 0 auto 2.5rem; }
+
+        .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.8rem; max-width: 850px; margin: 0 auto; }
+        .tag {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--accent-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            display: inline-flex; align-items: center;
+        }
+
+        .problem-banner {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 4rem auto;
+            max-width: 800px;
+        }
+        .problem-banner h3 { text-align: center; color: var(--accent-danger); margin-bottom: 1.5rem; }
+        .problem-list { list-style: none; display: flex; flex-direction: column; gap: 1rem; }
+        .problem-list li { display: flex; align-items: center; gap: 1rem; font-size: 1.1rem; }
+
+        section { padding: 5rem 0; border-bottom: 1px solid var(--border-color); }
+        .section-header { text-align: center; margin-bottom: 4rem; }
+        .section-header h2 { font-size: 2.5rem; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: transform 0.3s, background 0.3s;
+        }
+        .card:hover { transform: translateY(-5px); background: var(--bg-card-hover); border-color: rgba(139, 92, 246, 0.3); }
+
+        .card-icon { font-size: 2.5rem; margin-bottom: 1rem; display: inline-block; }
+        .card-title { color: var(--accent-secondary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+
+        .concept-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
+        .concept-header h3 { font-size: 2rem; margin: 0; }
+
+        .grid-5w1h { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 3rem; }
+        .box-5w {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid var(--accent-primary);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .box-5w.how { border-color: var(--accent-secondary); grid-column: 1 / -1; }
+        .box-label {
+            font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 0.5rem;
+            display: flex; justify-content: space-between;
+        }
+        .box-label span:last-child { color: white; }
+
+        pre {
+            background: #000; padding: 1.5rem; border-radius: 12px;
+            overflow-x: auto; border: 1px solid var(--border-color); margin: 1.5rem 0;
+        }
+        code { font-family: var(--font-mono); font-size: 0.9rem; color: #a5b4fc; }
+        .inline-code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: #fca5a5;
+        }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
+
+        .panel-good { border-top: 4px solid var(--accent-success); }
+        .panel-bad { border-top: 4px solid var(--accent-danger); }
+
+        .process-steps { display: flex; flex-direction: column; gap: 1rem; }
+        @media(min-width: 768px) { .process-steps { flex-direction: row; } }
+
+        .step-card {
+            flex: 1; background: var(--bg-card);
+            padding: 1.5rem; border-radius: 12px;
+            position: relative; border: 1px solid var(--border-color);
+        }
+        .step-number {
+            position: absolute; top: -15px; left: 20px;
+            width: 30px; height: 30px;
+            background: var(--accent-primary); color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold;
+        }
+
+        .table-wrapper { overflow-x: auto; margin-top: 2rem; border-radius: 12px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; background: var(--bg-card); }
+        th, td { padding: 1.2rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { background: rgba(255, 255, 255, 0.05); font-weight: 800; color: var(--accent-secondary); }
+        tr:last-child td { border-bottom: none; }
+
+        .tree-view {
+            font-family: var(--font-mono);
+            font-size: 0.88rem;
+            line-height: 1.85;
+            color: var(--text-muted);
+            background: #000;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            white-space: pre;
+            overflow-x: auto;
+        }
+        .tree-view .file { color: #a5b4fc; }
+        .tree-view .folder { color: #fcd34d; font-weight: bold; }
+        .tree-view .comment { color: #6b7280; font-style: italic; }
+        .tree-view .badge-claude  { color: var(--accent-secondary); font-weight: bold; }
+        .tree-view .badge-kiro    { color: var(--accent-warning); font-weight: bold; }
+        .tree-view .badge-cursor  { color: var(--accent-cursor); font-weight: bold; }
+        .tree-view .badge-shared  { color: var(--accent-success); font-weight: bold; }
+        .tree-view .danger        { color: var(--accent-danger); font-weight: bold; }
+
+        .workflow-item { margin-bottom: 0.8rem; display: flex; align-items: flex-start; gap: 0.8rem; }
+        .workflow-item .tag { min-width: 80px; justify-content: center; padding: 0.3rem 0.6rem; }
+
+        .cta-section {
+            text-align: center; padding: 6rem 0;
+            background: linear-gradient(180deg, transparent, rgba(139, 92, 246, 0.1));
+            border-bottom: none;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none; cursor: pointer;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+        .delay-3 { transition-delay: 0.3s; }
+
+        /* Tool comparison cards */
+        .tool-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .tool-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-top: 4px solid;
+        }
+        .tool-card.claude  { border-top-color: var(--accent-secondary); }
+        .tool-card.kiro    { border-top-color: var(--accent-warning); }
+        .tool-card.cursor  { border-top-color: var(--accent-cursor); }
+        .tool-card h4 { font-size: 1.3rem; margin-bottom: 0.3rem; }
+        .tool-card .subtitle { color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem; }
+        .tool-card ul { list-style: none; padding: 0; }
+        .tool-card ul li { padding: 0.3rem 0; font-size: 0.92rem; padding-left: 1.4rem; position: relative; }
+        .tool-card ul li::before { content: '▸'; position: absolute; left: 0; color: var(--accent-primary); }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="#" class="logo">
+                    🤖 <span class="gradient-text">Claude · Kiro · Cursor 5W1H</span>
+                </a>
+                <ul class="nav-links">
+                    <li><a href="#overview">Tổng quan</a></li>
+                    <li><a href="#concepts">Khái niệm</a></li>
+                    <li><a href="#workspace-tree">Cây workspace</a></li>
+                    <li><a href="#combination">Quy trình</a></li>
+                    <li><a href="#frt-toolkit">FRT Toolkit</a></li>
+                    <li><a href="#summary">Đối chiếu</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section id="hero">
+        <div class="container animate-on-scroll">
+            <h1>5W1H về <br><span class="gradient-text">Claude Code, Kiro & Cursor</span></h1>
+            <p>Hiểu đúng 11 khái niệm cốt lõi của 3 AI IDE — và cách tổ chức workspace để cả 3 cùng đọc 1 nguồn knowledge, không duplicate.</p>
+
+            <div class="tags">
+                <span class="tag">CLAUDE.md</span>
+                <span class="tag">AGENTS.md</span>
+                <span class="tag">Steering</span>
+                <span class="tag">Command</span>
+                <span class="tag">Skill</span>
+                <span class="tag">Hook</span>
+                <span class="tag">MCP</span>
+                <span class="tag">Subagent</span>
+                <span class="tag" style="border-color: rgba(16, 185, 129, 0.4); color: var(--accent-success);">Spec</span>
+                <span class="tag" style="border-color: rgba(245, 158, 11, 0.4); color: var(--accent-warning);">Power</span>
+                <span class="tag" style="border-color: rgba(236, 72, 153, 0.5); color: var(--accent-cursor);">Cursor Rules</span>
+            </div>
+
+            <div class="problem-banner animate-on-scroll delay-2">
+                <h3>❓ Vì sao bạn đang đọc trang này?</h3>
+                <ul class="problem-list">
+                    <li>❌ <span>Steering bạn đang dùng — sếp nói sai.</span></li>
+                    <li>❌ <span>Dùng <span class="inline-code">/review-fix</span> chạy 10 lần ra 10 lỗi khác nhau.</span></li>
+                    <li>❌ <span>AI mỗi ngày đẻ ra thêm 1 khái niệm mới — không theo kịp.</span></li>
+                    <li>❌ <span>Team có người dùng Claude, người dùng Kiro, người dùng Cursor — phải copy rule cho 3 nơi?</span></li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tool Stack Section -->
+    <section id="tools">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>3 IDE — 1 Workspace</h2>
+                <p>Mỗi tool có thế mạnh riêng. Tổ chức đúng → cả team thoải mái chọn.</p>
+            </div>
+
+            <div class="tool-cards">
+                <div class="tool-card claude">
+                    <h4>🤖 Claude Code</h4>
+                    <div class="subtitle">CLI + IDE plugin (Rider, VS Code, JetBrains)</div>
+                    <ul>
+                        <li>Anthropic native — model mạnh nhất Claude</li>
+                        <li>Tool use + MCP cực mạnh</li>
+                        <li>Subagent, Skill, Hook ecosystem</li>
+                        <li>Slash command tự custom</li>
+                        <li>Strong for: agentic work, refactor lớn</li>
+                    </ul>
+                </div>
+                <div class="tool-card kiro">
+                    <h4>🚀 Kiro</h4>
+                    <div class="subtitle">IDE đầy đủ — fork VS Code + AI layer</div>
+                    <ul>
+                        <li>Spec workflow (req → design → tasks)</li>
+                        <li>Steering modes (always/fileMatch/manual)</li>
+                        <li>Hooks: button-triggered + event-based</li>
+                        <li>Power = plugin 1-click (Figma, Postman)</li>
+                        <li>Strong for: feature lớn cần kiểm soát</li>
+                    </ul>
+                </div>
+                <div class="tool-card cursor">
+                    <h4>🖱️ Cursor</h4>
+                    <div class="subtitle">IDE fork VS Code — AI tab completion vô địch</div>
+                    <ul>
+                        <li>Tab completion thông minh nhất hiện tại</li>
+                        <li>Composer = agent mode (multi-file edit)</li>
+                        <li>@ context: @Files, @Code, @Docs, @Web</li>
+                        <li>Rules .mdc modular theo file glob</li>
+                        <li>Strong for: iterate UI/feature nhanh</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Overview Map -->
+    <section id="overview">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>Bản đồ tổng quan</h2>
+                <p>11 khái niệm xếp thành 4 lớp — đọc theo lớp dễ nhớ hơn.</p>
+            </div>
+
+            <div class="grid-4">
+                <div class="card animate-on-scroll delay-1">
+                    <span class="card-icon">📋</span>
+                    <div class="card-title">Lớp Context</div>
+                    <h3>Nói AI biết gì</h3>
+                    <p style="color: var(--text-muted); margin-top: 1rem;">
+                        <strong>AGENTS.md:</strong> Universal (mọi tool)<br>
+                        <strong>CLAUDE.md:</strong> Claude Code entrypoint<br>
+                        <strong>.cursor/rules:</strong> Cursor entrypoint<br>
+                        <strong>Spec / Docs:</strong> Load khi cần
+                    </p>
+                </div>
+                <div class="card animate-on-scroll delay-2">
+                    <span class="card-icon">⚙️</span>
+                    <div class="card-title">Lớp Behavior</div>
+                    <h3>Nói AI làm thế nào</h3>
+                    <p style="color: var(--text-muted); margin-top: 1rem;">
+                        <strong>Steering (Kiro):</strong> Behavior modes<br>
+                        <strong>Cursor Rules:</strong> Glob-based behavior<br>
+                        <strong>Subagent:</strong> Persona chuyên trách
+                    </p>
+                </div>
+                <div class="card animate-on-scroll delay-3">
+                    <span class="card-icon">🎬</span>
+                    <div class="card-title">Lớp Action</div>
+                    <h3>Cách kích hoạt</h3>
+                    <p style="color: var(--text-muted); margin-top: 1rem;">
+                        <strong>Command:</strong> User gõ /<br>
+                        <strong>Skill:</strong> AI tự kích hoạt<br>
+                        <strong>Hook:</strong> Trigger / Nút bấm
+                    </p>
+                </div>
+                <div class="card animate-on-scroll delay-1">
+                    <span class="card-icon">🌐</span>
+                    <div class="card-title">Lớp Integration</div>
+                    <h3>Kết nối ra ngoài</h3>
+                    <p style="color: var(--text-muted); margin-top: 1rem;">
+                        <strong>MCP:</strong> Bridge raw — DÙNG ĐƯỢC cho cả 3 IDE<br>
+                        <strong>Power:</strong> Plugin Kiro (1-click)
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Detailed Concepts -->
+    <section id="concepts">
+        <div class="container">
+
+            <!-- 1. CLAUDE.md -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>1. CLAUDE.md</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>File markdown ở ROOT project. Là "system prompt" tự load của Claude Code.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Cho AI biết ta là ai, code gì, convention gì. Tránh khởi tạo session "mù".</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Dev dùng Claude Code (CLI/IDE). Tạo riêng cho project của mình.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>MỖI session mới. Tự động load.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>Tại ROOT project <span class="inline-code">&lt;project&gt;/CLAUDE.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Viết ngắn gọn: identity, stack, conventions, reference qua <span class="inline-code">@file</span>.</div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card panel-good">
+                        <h4>✅ NÊN — Ngắn, focus hành vi</h4>
+<pre><code># Return Home BE
+## Identity
+- Service: API trả hàng (PHARMACY)
+- Stack: .NET 8, EF Core, MediatR
+
+## Conventions
+- Entity: OrderReturn
+- Async only — NO .Result
+- [Authorize] mandatory
+
+## References
+@../docs/conventions.md</code></pre>
+                    </div>
+                    <div class="card panel-bad">
+                        <h4>❌ KHÔNG NÊN — Nhồi nhét</h4>
+                        <ul style="margin-left: 1.5rem; color: var(--text-muted); padding-top: 1rem;">
+                            <li>Paste 30 trang API docs → <strong>Context bloat</strong></li>
+                            <li>Paste current sprint state, task progress → <strong>AI nói dối vì state cũ</strong></li>
+                            <li>Copy rule trùng với linter → <strong>Tốn focus</strong></li>
+                            <li>Viết mơ hồ "write good code" → <strong>Vô dụng</strong></li>
+                        </ul>
+                        <p style="margin-top:1rem; color:var(--accent-danger);"><em>Rule of thumb: &lt; 5KB.</em></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. AGENTS.md -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>2. AGENTS.md <span style="font-size: 1rem; font-weight: normal; color: var(--accent-success);">✨ Universal — cho cả 3 IDE</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Chuẩn UNIVERSAL. File markdown mọi tool (Claude, Cursor, Aider, Kiro...) đều đọc.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tránh duplicate context. Viết 1 lần, mọi tool hiểu.</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Team đa-tool, hoặc người muốn ổn định trước thay đổi AI.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>Khi team dùng > 1 AI tool song song.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>ROOT project (cùng cấp CLAUDE.md)</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Tạo AGENTS.md chứa rules chung. CLAUDE.md gọi <span class="inline-code">@AGENTS.md</span>, <span class="inline-code">.cursor/rules/main.mdc</span> cũng reference nó.</div>
+                </div>
+            </div>
+
+            <!-- 3. Steering -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>3. Steering <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(Dành cho Kiro)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Tài liệu định hướng HÀNH VI lâu dài trong Kiro. (Không phải database API).</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tách biệt "hành vi cố định" và "context tạm thời" qua mọi session.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>3 mode: Always (mọi lúc) • File Match (khớp pattern) • Manual (gõ #tag).</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.kiro/steering/</span> (product, tech, structure.md)</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Frontmatter <span class="inline-code">inclusion: always/fileMatch/manual</span>. Giữ NGẮN. Tham chiếu qua <span class="inline-code">#[[file]]</span>.</div>
+                </div>
+
+                <div class="card" style="background: rgba(6, 182, 212, 0.05); border-color: rgba(6, 182, 212, 0.3);">
+                    <h4 style="color: var(--accent-secondary)">💡 Phân loại đúng Documents:</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <strong>Steering (.kiro/steering)</strong><br>
+                            <span style="color: var(--text-muted)">Identity, Tech stack chính, Conventions ko linter, Quyết định cố định.</span>
+                        </div>
+                        <div>
+                            <strong>Docs (docs/)</strong><br>
+                            <span style="color: var(--text-muted)">API reference, Business rules detailed, ADRs.</span>
+                        </div>
+                        <div>
+                            <strong>Specs (specs/)</strong><br>
+                            <span style="color: var(--text-muted)">Requirements, Design, State/Progress (thay đổi liên tục).</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Slash Command -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>4. Slash Command <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(/command-name)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Workflow rút gọn. Gõ <span class="inline-code">/name</span> để chạy script prompt định sẵn.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Đóng gói workflow lặp lại, tránh paste prompt dài mỗi lần.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/commands/&lt;name&gt;.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Tạo file markdown với frontmatter. Dùng biến <span class="inline-code">$ARGUMENTS</span>.</div>
+                </div>
+
+                <div class="card">
+                    <h4>📄 Ví dụ: /spec-from-jira</h4>
+<pre><code>---
+description: Tạo spec từ Jira ticket
+argument-hint: "&lt;JIRA-ID&gt;"
+---
+Tạo spec đầy đủ cho $ARGUMENTS.
+Bước 1: Dùng MCP đọc Jira issue_key: $ARGUMENTS
+Bước 2: Đọc Confluence linked docs
+Bước 3: Tạo specs/{slug}/ (requirements, design, tasks)
+Bước 4: Confirm trước khi save.</code></pre>
+                    <p style="margin-top: 1rem; color: var(--text-muted)">Cách dùng trong chat: <span class="inline-code">/spec-from-jira FC-53161</span></p>
+                </div>
+            </div>
+
+            <!-- 5. Skill -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>5. Skill</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Module "kỹ năng" đóng gói. AI tự kích hoạt khi tình huống match.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>User không cần nhớ lệnh (khác Command). Tốt cho capability đặc thù (pptx, excel).</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/skills/&lt;name&gt;/SKILL.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Folder chứa SKILL.md (mô tả trigger) + các script/template helper đi kèm.</div>
+                </div>
+
+                <div class="grid-2">
+                    <div>
+                        <h4>📁 Cấu trúc một Skill (vd: tạo pptx)</h4>
+                        <div class="tree-view"><span class="folder">pptx/</span>
+├── <span class="file">SKILL.md</span>             <span class="comment">← Triggers + workflow</span>
+├── <span class="file">editing.md</span>           <span class="comment">← Sub-guide</span>
+├── <span class="folder">scripts/</span>
+│   ├── <span class="file">thumbnail.py</span>     <span class="comment">← Helper scripts</span>
+└── <span class="folder">resources/</span>
+    └── <span class="comment">(templates...)</span></div>
+                    </div>
+                    <div class="card">
+                        <h4>🎯 Skill vs Command</h4>
+                        <p><strong>Command:</strong> User CHỦ ĐỘNG gõ. 1 prompt cố định. Cho workflow user-triggered.</p>
+                        <hr style="border:0; border-top: 1px solid var(--border-color); margin: 1rem 0;">
+                        <p><strong>Skill:</strong> AI TỰ kích hoạt khi cần. Gồm nhiều files/scripts. Tốt cho capability theo file type/domain (cần in sẵn best practice).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Hook -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>6. Hook</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Trigger TỰ ĐỘNG chạy action khi có event xảy ra. Hoặc nút bấm thủ công.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tự động hóa boring tasks (format, lint). Đóng gói quy trình thành 1 nút.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/settings.json</span> hoặc <span class="inline-code">.kiro/hooks/</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Định nghĩa matcher (event/regex) + action (shell command / askAgent).</div>
+                </div>
+
+                <h4 style="margin-bottom: 1.5rem; text-align: center;">⚠️ Đừng nhầm 3 loại Hook này</h4>
+                <div class="process-steps">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h4>Claude Code Hook</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Trong session Claude Code</p>
+                        <span class="inline-code" style="display:block; margin-bottom: 1rem;">.claude/settings.json</span>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Auto-format (<span class="inline-code">dotnet format</span>) sau khi sửa file (PostToolUse).</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h4>Kiro Hook</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">User trigger thủ công / Event</p>
+                        <span class="inline-code" style="display:block; margin-bottom: 1rem;">.kiro/hooks/*.kiro.hook</span>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Bấm nút để update docs, generate MR summary.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h4>OS Cron Task</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Chạy ngầm mức OS</p>
+                        <span class="inline-code" style="display:block; margin-bottom: 1rem;">crontab / launchd</span>
+                        <p style="font-size: 0.9rem;"><strong>Use case:</strong> Fetch data định kỳ bằng script bash (every Mon 9am).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. MCP -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>7. MCP <span style="font-size: 1rem; font-weight: normal; color: var(--accent-success);">✨ Universal — cho cả 3 IDE</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Giao thức chuẩn để AI giao tiếp với "tools bên ngoài" (Database, APIs).</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Giúp AI truy cập Jira, Confluence, Git... mà không cần dev tự code. CÙNG 1 MCP server, cả 3 IDE đều xài được.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div>Claude: <span class="inline-code">.claude/settings.json</span> · Kiro: <span class="inline-code">.kiro/settings/mcp.json</span> · Cursor: <span class="inline-code">.cursor/mcp.json</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Khai báo server URL & tokens. AI sẽ TỰ DISCOVER list tools.</div>
+                </div>
+
+                <div class="card">
+                    <h4>⚙️ Cấu hình MCP (Ví dụ chung cho cả 3 IDE)</h4>
+<pre><code>{
+  "mcpServers": {
+    "company-context": {
+      "url": "https://mcp.domain.com/mcp",
+      "headers": {
+        "X-GitLab-Token": "${GITLAB_TOKEN}",
+        "X-Jira-Token": "${JIRA_TOKEN}"
+      }
+    }
+  }
+}</code></pre>
+                    <p style="color: var(--accent-danger); font-weight: bold;">⚠️ Lưu ý: Add mcp.json vào .gitignore, KHÔNG commit token lên Git!</p>
+                </div>
+            </div>
+
+            <!-- 8. Subagent -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>8. Subagent</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Agent CON với context riêng, tools giới hạn, system prompt chuyên biệt.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Tránh "làm bẩn" context chính khi cần deep dive (vd: audit security).</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.claude/agents/&lt;name&gt;.md</span></div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Gọi qua <span class="inline-code">@subagent-name</span> hoặc Claude tự delegate.</div>
+                </div>
+
+                <div class="card" style="background: rgba(139, 92, 246, 0.05);">
+                    <h4 style="color: var(--accent-primary)">🎯 Subagent vs Skill</h4>
+                    <p style="margin-bottom: 0.5rem"><strong>Skill</strong> = Capability (Cách làm một việc cụ thể).</p>
+                    <p><strong>Subagent</strong> = Persona (Góc nhìn chuyên môn - vd: Security Reviewer. Không sửa code, chỉ đọc/tư vấn).</p>
+                </div>
+            </div>
+
+            <!-- 9. Spec -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>9. Spec</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Quy trình có cấu trúc để xây tính năng phức tạp: req → design → tasks.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Ép AI hiểu YÊU CẦU trước khi code. Có checkpoint confirm.</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Dev / BA / TechLead xử lý feature vượt khả năng 1 prompt.</div>
+                    <div class="box-5w"><div class="box-label">WHEN <span>Khi nào?</span></div>Feature sửa > 5 file hoặc có business logic phức tạp.</div>
+                    <div class="box-5w"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.kiro/specs/&lt;feature&gt;/</span> (chứa req, design, tasks.md)</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Bắt đầu spec workflow → AI hỏi req → viết design → chia tasks.</div>
+                </div>
+            </div>
+
+            <!-- 10. Power -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3>10. Power <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(Kiro)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w"><div class="box-label">WHAT <span>Cái gì?</span></div>Plugin "siêu năng lực" cài 1 click vào Kiro kết nối dịch vụ ngoài.</div>
+                    <div class="box-5w"><div class="box-label">WHY <span>Tại sao?</span></div>Setup cực nhanh, có UI, không cần cấu hình token tay phức tạp.</div>
+                    <div class="box-5w"><div class="box-label">WHO <span>Ai dùng?</span></div>Team non-tech (BA/Design) hoặc Dev muốn dùng tool có sẵn (Figma, Postman).</div>
+                    <div class="box-5w how"><div class="box-label">HOW <span>Như thế nào?</span></div>Mở Command Palette → "Configure Powers" → Chọn plugin → Cài.</div>
+                </div>
+
+                <div class="card">
+                    <h4>⚖️ Power vs MCP — Khác gì?</h4>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Tiêu chí</th>
+                                    <th style="color: var(--accent-warning);">Power</th>
+                                    <th style="color: var(--accent-secondary);">MCP</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Cài đặt</td>
+                                    <td>1 click qua UI</td>
+                                    <td>Sửa JSON config tay</td>
+                                </tr>
+                                <tr>
+                                    <td>Setup</td>
+                                    <td>Đã đóng gói sẵn</td>
+                                    <td>Khai báo URL + token thủ công</td>
+                                </tr>
+                                <tr>
+                                    <td>UX</td>
+                                    <td>Có giao diện</td>
+                                    <td>Raw — dev-facing</td>
+                                </tr>
+                                <tr>
+                                    <td>Tính linh hoạt</td>
+                                    <td>Chỉ các plugin có sẵn</td>
+                                    <td>Bất kỳ MCP server nào (Jira, GitLab cty)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top: 1rem; color: var(--text-muted);"><em>💡 Rule of thumb: Có Power → dùng Power (nhanh, đẹp). Không có Power → config MCP (linh hoạt, hệ thống nội bộ).</em></p>
+                </div>
+            </div>
+
+            <!-- 11. Cursor Rules (NEW) -->
+            <div class="animate-on-scroll" style="margin-bottom: 6rem;">
+                <div class="concept-header">
+                    <h3 style="color: var(--accent-cursor);">11. Cursor Rules <span style="font-size: 1rem; font-weight: normal; color: var(--text-muted);">(Cursor IDE — .cursor/rules/*.mdc)</span></h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w" style="border-color: var(--accent-cursor)"><div class="box-label">WHAT <span>Cái gì?</span></div>Tài liệu rules dạng modular cho Cursor IDE — mỗi file .mdc có frontmatter quyết định khi nào AI dùng.</div>
+                    <div class="box-5w" style="border-color: var(--accent-cursor)"><div class="box-label">WHY <span>Tại sao?</span></div>Tab completion & Composer agent của Cursor cần "biết style" code mình. Rules = behavior layer của Cursor.</div>
+                    <div class="box-5w" style="border-color: var(--accent-cursor)"><div class="box-label">WHO <span>Ai dùng?</span></div>Dev dùng Cursor IDE (fork VS Code). Đặc biệt khi cùng team dùng AI khác nhau.</div>
+                    <div class="box-5w" style="border-color: var(--accent-cursor)"><div class="box-label">WHEN <span>Khi nào?</span></div>4 mode: <span class="inline-code">alwaysApply</span> (luôn) · <span class="inline-code">globs</span> (theo file pattern) · <span class="inline-code">description</span> (AI quyết) · Manual (gõ @rule-name).</div>
+                    <div class="box-5w" style="border-color: var(--accent-cursor)"><div class="box-label">WHERE <span>Ở đâu?</span></div><span class="inline-code">.cursor/rules/*.mdc</span> (mới — multiple files) hoặc <span class="inline-code">.cursorrules</span> (legacy — 1 file)</div>
+                    <div class="box-5w how" style="border-color: var(--accent-cursor)"><div class="box-label">HOW <span>Như thế nào?</span></div>Tạo .mdc files với frontmatter <span class="inline-code">description</span>, <span class="inline-code">globs</span>, <span class="inline-code">alwaysApply</span>. Tách rule theo domain (dotnet.mdc, frontend.mdc, security.mdc).</div>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                        <h4 style="color: var(--accent-cursor);">📄 Ví dụ: .cursor/rules/dotnet.mdc</h4>
+<pre><code>---
+description: Convention .NET BE return-home
+globs:
+  - "**/*.cs"
+alwaysApply: false
+---
+
+# Convention .NET
+
+- Entity name: `OrderReturn`
+  (KHÔNG dùng OrderReturnHead)
+- Async only — NO `.Result` / `.Wait()`
+- `[Authorize]` mandatory mọi endpoint
+- DTO không depend trực tiếp Entity domain
+
+@docs/platform/conventions.md
+@docs/api/return-home/</code></pre>
+                    </div>
+                    <div class="card">
+                        <h4>🔍 4 Mode kích hoạt — chọn đúng</h4>
+                        <table style="width:100%; background:transparent; margin-top: 0.5rem;">
+                            <tbody>
+                                <tr><td style="padding:0.6rem 0; border-bottom:1px solid var(--border-color)"><strong style="color:var(--accent-success)">alwaysApply: true</strong></td><td style="padding:0.6rem 0; border-bottom:1px solid var(--border-color)">Identity, branching convention</td></tr>
+                                <tr><td style="padding:0.6rem 0; border-bottom:1px solid var(--border-color)"><strong style="color:var(--accent-warning)">globs: ["**/*.cs"]</strong></td><td style="padding:0.6rem 0; border-bottom:1px solid var(--border-color)">Rule chỉ áp dụng cho file matching</td></tr>
+                                <tr><td style="padding:0.6rem 0; border-bottom:1px solid var(--border-color)"><strong style="color:var(--accent-secondary)">description: "..."</strong></td><td style="padding:0.6rem 0; border-bottom:1px solid var(--border-color)">AI tự load khi context phù hợp</td></tr>
+                                <tr><td style="padding:0.6rem 0;"><strong style="color:var(--accent-cursor)">Manual</strong></td><td style="padding:0.6rem 0;">User gõ @rule-name vào prompt</td></tr>
+                            </tbody>
+                        </table>
+                        <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.9rem;"><em>💡 Mỗi rule = 1 concern. Đừng nhồi vào 1 file.</em></p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1.5rem; background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.3);">
+                    <h4 style="color: var(--accent-cursor);">🎯 Cursor Rules vs Steering vs CLAUDE.md — cùng là "behavior layer", khác chỗ nào?</h4>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <strong style="color: var(--accent-secondary);">CLAUDE.md</strong><br>
+                            <span style="color: var(--text-muted)">1 file ROOT. Auto load mọi session. Đơn giản.</span>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent-warning);">Steering (Kiro)</strong><br>
+                            <span style="color: var(--text-muted)">Nhiều file, 3 mode (always/fileMatch/manual). Frontmatter <span class="inline-code">inclusion</span>.</span>
+                        </div>
+                        <div>
+                            <strong style="color: var(--accent-cursor);">Cursor Rules</strong><br>
+                            <span style="color: var(--text-muted)">Nhiều .mdc file, 4 mode. Frontmatter <span class="inline-code">alwaysApply</span>/<span class="inline-code">globs</span>/<span class="inline-code">description</span>.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- WORKSPACE TREE SECTION (NEW) -->
+    <section id="workspace-tree" style="background-color: rgba(255, 255, 255, 0.02);">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>🌳 Cây Thư Mục Workspace Chuẩn</h2>
+                <p>Một workspace — phục vụ cả 3 IDE (Claude Code · Kiro · Cursor) song song. Không duplicate knowledge, không leak secret.</p>
+            </div>
+
+            <div class="tree-view"><span class="folder">workspace/</span>
+│
+├── <span class="folder">ai-native-client/</span>              <span class="comment">🎯 ORCHESTRATION REPO — chứa context, không chứa code production</span>
+│   │
+│   ├── <span class="file">AGENTS.md</span>                     <span class="badge-shared">✨ UNIVERSAL — cả 3 IDE đọc</span>
+│   ├── <span class="file">CLAUDE.md</span>                     <span class="badge-claude">🤖 Claude Code entrypoint → references @AGENTS.md</span>
+│   ├── <span class="file">.cursorrules</span>                  <span class="badge-cursor">🖱️ Cursor legacy — short pointer → @.cursor/rules/</span>
+│   │
+│   ├── <span class="folder">.claude/</span>                    <span class="badge-claude">🤖 Claude Code config</span>
+│   │   ├── <span class="folder">commands/</span>               <span class="comment">- /review, /spec-from-jira, /review-fix...</span>
+│   │   ├── <span class="folder">agents/</span>                 <span class="comment">- Subagents: dotnet-architect, security-reviewer</span>
+│   │   ├── <span class="folder">skills/</span>                 <span class="comment">- Custom skills (nếu có)</span>
+│   │   └── <span class="file">settings.json</span>             <span class="comment">- Hooks + MCP (<span class="danger">gitignored — chứa token</span>)</span>
+│   │
+│   ├── <span class="folder">.kiro/</span>                      <span class="badge-kiro">🚀 Kiro config</span>
+│   │   ├── <span class="folder">steering/</span>               <span class="comment">- product.md, tech.md, structure.md + custom</span>
+│   │   │   ├── <span class="file">product.md</span>            <span class="comment">    (inclusion: always — thin wrapper #[[file:../../docs/platform/product.md]])</span>
+│   │   │   ├── <span class="file">tech.md</span>               <span class="comment">    (inclusion: always — wrapper trỏ docs/platform/tech-stack.md)</span>
+│   │   │   └── <span class="file">techlead-review-principles.md</span> <span class="comment">(inclusion: fileMatch *.cs)</span>
+│   │   ├── <span class="folder">hooks/</span>                  <span class="comment">- *.kiro.hook (userTriggered, fileEdited...)</span>
+│   │   └── <span class="folder">settings/</span>
+│   │       └── <span class="file">mcp.json</span>              <span class="danger">⚠️ gitignored — chứa token</span>
+│   │
+│   ├── <span class="folder">.cursor/</span>                    <span class="badge-cursor">🖱️ Cursor config</span>
+│   │   ├── <span class="folder">rules/</span>                  <span class="comment">- Modular *.mdc rules</span>
+│   │   │   ├── <span class="file">main.mdc</span>              <span class="comment">    (alwaysApply: true — reference @AGENTS.md)</span>
+│   │   │   ├── <span class="file">dotnet.mdc</span>            <span class="comment">    (globs: **/*.cs — convention .NET)</span>
+│   │   │   ├── <span class="file">frontend.mdc</span>          <span class="comment">    (globs: **/*.tsx — convention FE)</span>
+│   │   │   └── <span class="file">security.mdc</span>          <span class="comment">    (description: "Khi sửa auth/endpoint")</span>
+│   │   └── <span class="file">mcp.json</span>                  <span class="danger">⚠️ gitignored — chứa token</span>
+│   │
+│   ├── <span class="folder">docs/</span>                       <span class="badge-shared">📚 SINGLE SOURCE OF TRUTH — knowledge tool-agnostic</span>
+│   │   ├── <span class="folder">platform/</span>               <span class="comment">- product.md, tech-stack.md, conventions.md</span>
+│   │   ├── <span class="folder">api/</span>                    <span class="comment">- API reference (auto-sync từ repos qua hook)</span>
+│   │   │   └── <span class="folder">return-home/</span>
+│   │   ├── <span class="folder">rules/</span>                  <span class="comment">- Business rules detailed</span>
+│   │   ├── <span class="folder">adr/</span>                    <span class="comment">- Architecture Decision Records</span>
+│   │   └── <span class="folder">notes/</span>                  <span class="comment">- Misc reference (special notes)</span>
+│   │
+│   ├── <span class="folder">specs/</span>                      <span class="badge-shared">📐 Feature specs — tool-agnostic, đọc bởi cả 3 IDE</span>
+│   │   ├── <span class="folder">_archived/</span>              <span class="comment">- Specs đã ship (Phase 1...)</span>
+│   │   └── <span class="folder">&lt;feature-name&gt;/</span>
+│   │       ├── <span class="file">requirements.md</span>       <span class="comment">- EARS format</span>
+│   │       ├── <span class="file">design.md</span>             <span class="comment">- Mermaid + API + decisions</span>
+│   │       ├── <span class="file">tasks.md</span>              <span class="comment">- Atomic 5-15 tasks</span>
+│   │       └── <span class="file">progress.md</span>           <span class="comment">- ⚠️ State changes (tách khỏi steering!)</span>
+│   │
+│   └── <span class="file">.gitignore</span>                    <span class="danger">⚠️ phải gitignore: mcp.json, *.token, .env</span>
+│
+└── <span class="folder">repos/</span>                          <span class="comment">📦 ACTUAL CODE REPOS — clean, chỉ giữ pointer</span>
+    │
+    ├── <span class="folder">return-home/</span>                <span class="comment">(.NET BE)</span>
+    │   ├── <span class="file">CLAUDE.md</span>                 <span class="comment">- Lightweight: @../ai-native-client/CLAUDE.md + repo-specific identity</span>
+    │   ├── <span class="folder">src/</span>...
+    │   └── ...
+    │
+    ├── <span class="folder">oms-service/</span>                <span class="comment">(.NET BE)</span>
+    │   ├── <span class="file">CLAUDE.md</span>                 <span class="comment">- Similar pointer pattern</span>
+    │   └── ...
+    │
+    └── <span class="folder">return-home-web/</span>            <span class="comment">(React FE)</span>
+        ├── <span class="file">CLAUDE.md</span>
+        └── ...</div>
+
+            <div class="grid-3" style="margin-top: 2.5rem;">
+                <div class="card" style="border-top: 4px solid var(--accent-secondary);">
+                    <h4 style="color: var(--accent-secondary);">🎯 Nguyên tắc 1</h4>
+                    <p style="font-weight: 700; margin-bottom: 0.5rem;">Single Source of Truth</p>
+                    <p style="color: var(--text-muted)">Knowledge (API, rules, conventions) ở <span class="inline-code">docs/</span> — tool-agnostic. Tool configs (<span class="inline-code">.kiro/</span>, <span class="inline-code">.cursor/</span>, <span class="inline-code">.claude/</span>) CHỈ reference, không duplicate.</p>
+                </div>
+                <div class="card" style="border-top: 4px solid var(--accent-primary);">
+                    <h4 style="color: var(--accent-primary);">🔒 Nguyên tắc 2</h4>
+                    <p style="font-weight: 700; margin-bottom: 0.5rem;">Secrets gitignored</p>
+                    <p style="color: var(--text-muted)">Mọi <span class="inline-code">mcp.json</span>, <span class="inline-code">settings.json</span> chứa token → <span class="inline-code">.gitignore</span>. Token leak = revoke + rotate ngay.</p>
+                </div>
+                <div class="card" style="border-top: 4px solid var(--accent-success);">
+                    <h4 style="color: var(--accent-success);">📦 Nguyên tắc 3</h4>
+                    <p style="font-weight: 700; margin-bottom: 0.5rem;">Orchestration tách Code</p>
+                    <p style="color: var(--text-muted)">Repo <span class="inline-code">ai-native-client/</span> chứa context. Repos code (<span class="inline-code">return-home</span>...) giữ <span class="inline-code">CLAUDE.md</span> gọn — tham chiếu lên.</p>
+                </div>
+                <div class="card" style="border-top: 4px solid var(--accent-warning);">
+                    <h4 style="color: var(--accent-warning);">🔄 Nguyên tắc 4</h4>
+                    <p style="font-weight: 700; margin-bottom: 0.5rem;">Wrapper-pattern config</p>
+                    <p style="color: var(--text-muted)">File trong <span class="inline-code">.kiro/steering/</span> hoặc <span class="inline-code">.cursor/rules/</span> chỉ là wrapper mỏng <strong>trỏ về</strong> file canonical ở <span class="inline-code">docs/</span>.</p>
+                </div>
+                <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                    <h4 style="color: var(--accent-cursor);">📐 Nguyên tắc 5</h4>
+                    <p style="font-weight: 700; margin-bottom: 0.5rem;">Specs out of tool-folder</p>
+                    <p style="color: var(--text-muted)">Đặt <span class="inline-code">specs/</span> ở root (không phải <span class="inline-code">.kiro/specs/</span>) để Claude/Cursor cũng đọc được spec.</p>
+                </div>
+                <div class="card" style="border-top: 4px solid var(--accent-danger);">
+                    <h4 style="color: var(--accent-danger);">⚠️ Nguyên tắc 6</h4>
+                    <p style="font-weight: 700; margin-bottom: 0.5rem;">State ≠ Steering</p>
+                    <p style="color: var(--text-muted)">Task progress, current sprint → vào <span class="inline-code">specs/&lt;feature&gt;/progress.md</span>. KHÔNG nhồi vào steering (sẽ khiến AI nói dối khi outdate).</p>
+                </div>
+            </div>
+
+            <!-- Reference table for which IDE reads what -->
+            <div class="card" style="margin-top: 2.5rem;">
+                <h4>🗺️ IDE nào đọc gì?</h4>
+                <div class="table-wrapper" style="margin-top: 1rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>File / Folder</th>
+                                <th style="color: var(--accent-secondary);">🤖 Claude Code</th>
+                                <th style="color: var(--accent-warning);">🚀 Kiro</th>
+                                <th style="color: var(--accent-cursor);">🖱️ Cursor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="inline-code">AGENTS.md</span></td>
+                                <td>✅ qua @ ref</td>
+                                <td>✅ qua steering</td>
+                                <td>✅ qua @ ref</td>
+                            </tr>
+                            <tr>
+                                <td><span class="inline-code">CLAUDE.md</span></td>
+                                <td>✅ auto-load</td>
+                                <td>—</td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td><span class="inline-code">.cursor/rules/*.mdc</span></td>
+                                <td>—</td>
+                                <td>—</td>
+                                <td>✅ auto-load theo mode</td>
+                            </tr>
+                            <tr>
+                                <td><span class="inline-code">.kiro/steering/</span></td>
+                                <td>—</td>
+                                <td>✅ theo inclusion</td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td><span class="inline-code">docs/</span></td>
+                                <td>✅ qua @file ref</td>
+                                <td>✅ qua #[[file]]</td>
+                                <td>✅ qua @file ref</td>
+                            </tr>
+                            <tr>
+                                <td><span class="inline-code">specs/</span></td>
+                                <td>✅ user mention</td>
+                                <td>✅ spec workflow</td>
+                                <td>✅ user mention</td>
+                            </tr>
+                            <tr>
+                                <td>MCP server</td>
+                                <td>✅ <span class="inline-code">.claude/settings.json</span></td>
+                                <td>✅ <span class="inline-code">.kiro/settings/mcp.json</span></td>
+                                <td>✅ <span class="inline-code">.cursor/mcp.json</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow / Combination Section -->
+    <section id="combination" style="background-color: rgba(255, 255, 255, 0.02);">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>Quy trình thực tế (Combination)</h2>
+                <p>Mỗi concept đơn lẻ giải quyết 1 việc. Sức mạnh là khi ghép chúng lại.</p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card panel-good">
+                    <h4>👨‍💼 TechLead review MR</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item"><span class="tag">Hook</span><span>TechLead PR Review — bấm nút</span></div>
+                        <div class="workflow-item"><span class="tag">Steering</span><span>review-principles.md — tiêu chí</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>gitlab — đọc MR diff</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>ai-context — đọc Jira ticket</span></div>
+                        <div class="workflow-item"><span class="tag">Chat</span><span>TechLead confirm/sửa kết quả</span></div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-success); font-weight: 600;">
+                        ✅ Kết quả: MR review chuẩn hoá, không bỏ sót Jira context.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-secondary)">
+                    <h4>🛠️ Dev code feature mới</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item"><span class="tag">Spec</span><span>Plan: requirements + design + tasks</span></div>
+                        <div class="workflow-item"><span class="tag">Steering</span><span>AGENTS.md — convention</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>ai-context — read Jira</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>context7 — tra docs thư viện</span></div>
+                        <div class="workflow-item"><span class="tag">Hook</span><span>Lint on Save — auto check</span></div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-secondary); font-weight: 600;">
+                        ✅ Kết quả: Feature ship đúng spec, đúng convention, không miss requirement.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-primary)">
+                    <h4>🎨 Implement UI từ Figma</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item"><span class="tag">Power</span><span>Figma — paste link, đọc design</span></div>
+                        <div class="workflow-item"><span class="tag">Steering</span><span>component-naming rules</span></div>
+                        <div class="workflow-item"><span class="tag">Skill</span><span>Create React Component template</span></div>
+                        <div class="workflow-item"><span class="tag">Chat</span><span>Iterate UI với AI</span></div>
+                        <div class="workflow-item"><span class="tag">Hook</span><span>Format on Save</span></div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-primary); font-weight: 600;">
+                        ✅ Kết quả: Component UI đúng thiết kế, đúng convention format chuẩn.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-cursor)">
+                    <h4>⚡ Cursor flow — refactor nhanh</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item"><span class="tag" style="background: rgba(236,72,153,0.15); color: var(--accent-cursor); border-color: rgba(236,72,153,0.4);">Rules</span><span>.cursor/rules/dotnet.mdc — globs *.cs</span></div>
+                        <div class="workflow-item"><span class="tag" style="background: rgba(236,72,153,0.15); color: var(--accent-cursor); border-color: rgba(236,72,153,0.4);">Composer</span><span>Agent mode — chọn nhiều file</span></div>
+                        <div class="workflow-item"><span class="tag">@ Context</span><span>@docs/conventions @Code @Folders</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>company-context — đọc Jira</span></div>
+                        <div class="workflow-item"><span class="tag">Tab</span><span>Tab completion auto theo style</span></div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-cursor); font-weight: 600;">
+                        ✅ Kết quả: Refactor multi-file nhanh, vẫn đúng convention.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-warning)">
+                    <h4>🔄 Cross-IDE team workflow</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item"><span class="tag">AGENTS.md</span><span>Dev A (Claude) đọc</span></div>
+                        <div class="workflow-item"><span class="tag">AGENTS.md</span><span>Dev B (Kiro) cũng đọc</span></div>
+                        <div class="workflow-item"><span class="tag">AGENTS.md</span><span>Dev C (Cursor) cũng đọc</span></div>
+                        <div class="workflow-item"><span class="tag">docs/</span><span>1 source of truth</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>company-context dùng cho cả 3</span></div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-warning); font-weight: 600;">
+                        ✅ Kết quả: Team đa-tool, 0 duplicate rules.
+                    </div>
+                </div>
+
+                <div class="card panel-good" style="border-top-color: var(--accent-success)">
+                    <h4>🔍 Security review trước merge</h4>
+                    <div style="margin-top: 1.5rem;">
+                        <div class="workflow-item"><span class="tag">Subagent</span><span>@security-reviewer audit changes</span></div>
+                        <div class="workflow-item"><span class="tag">Steering</span><span>OWASP Top 10 — guidelines</span></div>
+                        <div class="workflow-item"><span class="tag">MCP</span><span>gitlab — đọc diff</span></div>
+                        <div class="workflow-item"><span class="tag">Hook</span><span>UserPromptSubmit — block nếu có secret</span></div>
+                    </div>
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); color: var(--accent-success); font-weight: 600;">
+                        ✅ Kết quả: Phát hiện sớm vuln, không leak secret lên git.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Summary Table Section -->
+    <section id="summary">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>Bảng Đối Chiếu (11 Khái Niệm)</h2>
+                <p>Tóm tắt nhanh để phân biệt</p>
+            </div>
+
+            <div class="table-wrapper">
+                <table style="font-size: 0.92rem;">
+                    <thead>
+                        <tr>
+                            <th>Khái niệm</th>
+                            <th>IDE chủ</th>
+                            <th>Đặt ở đâu</th>
+                            <th>Kích hoạt</th>
+                            <th>Để làm gì?</th>
+                            <th>Tương đương ở IDE khác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>AGENTS.md</strong></td>
+                            <td><span style="color: var(--accent-success);">Universal</span></td>
+                            <td>Project root</td>
+                            <td>Auto load</td>
+                            <td>Universal context (chung mọi AI)</td>
+                            <td><strong>Tự nó là cross-IDE</strong> — cả 3 đều đọc qua <span class="inline-code">@AGENTS.md</span> reference</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CLAUDE.md</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
+                            <td>Project root</td>
+                            <td>Auto load (Claude Code)</td>
+                            <td>Entry point context cho Claude Code</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> <span class="inline-code">.kiro/steering/product.md</span> (inclusion: always)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> <span class="inline-code">.cursor/rules/main.mdc</span> (alwaysApply: true) hoặc <span class="inline-code">.cursorrules</span> (legacy)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--accent-cursor);"><strong>Cursor Rules</strong></td>
+                            <td><span style="color: var(--accent-cursor);">Cursor</span></td>
+                            <td><span class="inline-code">.cursor/rules/*.mdc</span></td>
+                            <td>alwaysApply / globs / description / manual</td>
+                            <td>Behavior layer cho Cursor IDE</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> CLAUDE.md (always) + Skills (auto-trigger)<br>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> Steering (3 modes: always / fileMatch / manual)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Steering</strong></td>
+                            <td><span style="color: var(--accent-warning);">Kiro</span></td>
+                            <td><span class="inline-code">.kiro/steering/*.md</span></td>
+                            <td>always / fileMatch / manual</td>
+                            <td>Hành vi AI lâu dài (Kiro)</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> CLAUDE.md (always) + Skills (description match)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> <span class="inline-code">.cursor/rules/*.mdc</span> (4 modes)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Slash Command</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
+                            <td><span class="inline-code">.claude/commands/*.md</span></td>
+                            <td>User gõ <span class="inline-code">/name</span></td>
+                            <td>Workflow rút gọn, lặp lại</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> Hook userTriggered (nút bấm UI)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A native — workaround: rule với <span class="inline-code">@rule-name</span> manual invoke
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Skill</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
+                            <td><span class="inline-code">.claude/skills/*/SKILL.md</span></td>
+                            <td>AI <strong>tự</strong> kích hoạt theo description</td>
+                            <td>Capability đóng gói (script, best practice)</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> Skill (<span class="inline-code">.kiro/skills/</span>) — pattern tương tự<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> Rule với mode <span class="inline-code">description</span> (AI auto-load theo context)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Hook</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude</span> & <span style="color: var(--accent-warning);">Kiro</span></td>
+                            <td><span class="inline-code">settings.json</span> / <span class="inline-code">.kiro/hooks/</span></td>
+                            <td>Theo event hoặc nút bấm</td>
+                            <td>Tự động hóa task</td>
+                            <td>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A native — workaround: external (cron job, OS hooks, git hooks)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>MCP</strong></td>
+                            <td><span style="color: var(--accent-success);">Universal</span></td>
+                            <td><span class="inline-code">settings.json</span> (mcpServers) — cả 3 IDE</td>
+                            <td>AI gọi tool</td>
+                            <td>Cầu nối tools ngoài (raw)</td>
+                            <td>
+                                <strong>Cùng protocol cho cả 3</strong> — khác vị trí config:<br>
+                                <span class="inline-code">.claude/settings.json</span> · <span class="inline-code">.kiro/settings/mcp.json</span> · <span class="inline-code">.cursor/mcp.json</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Subagent</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
+                            <td><span class="inline-code">.claude/agents/*.md</span></td>
+                            <td><span class="inline-code">@name</span> hoặc auto delegate</td>
+                            <td>Persona chuyên môn, không nhiễu context</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> ⚠️ N/A native — workaround: Skill với persona-specific prompt<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A — workaround: Rule manual với system prompt riêng
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--accent-success);"><strong>Spec</strong></td>
+                            <td><span style="color: var(--accent-warning);">Kiro</span></td>
+                            <td><span class="inline-code">specs/&lt;feature&gt;/</span></td>
+                            <td>User mở spec workflow</td>
+                            <td>Plan tính năng có cấu trúc (Req → Design)</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> <span class="inline-code">specs/</span> folder + Skill orchestrator (vd: <span class="inline-code">feature-startup-protocol</span>)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> <span class="inline-code">specs/</span> folder + Rule manual orchestrator
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--accent-warning);"><strong>Power</strong></td>
+                            <td><span style="color: var(--accent-warning);">Kiro</span></td>
+                            <td>Cài qua Configure Powers (Kiro)</td>
+                            <td>AI tự dùng khi cần</td>
+                            <td>Plugin đóng gói (Figma, Postman)</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> Skill (Anthropic registry) + MCP (custom config)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A — chỉ có MCP qua config tay
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Legend / Note dưới bảng -->
+            <div style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                <div class="card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <h4 style="color: var(--accent-success);">✅ Universal concepts</h4>
+                    <p style="color: var(--text-muted);">
+                        <strong>AGENTS.md</strong> và <strong>MCP</strong> là cross-IDE chuẩn — cài 1 lần, work cả 3. Đây là <strong>điểm an toàn nhất</strong> để invest công sức.
+                    </p>
+                </div>
+                <div class="card" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <h4 style="color: var(--accent-warning);">⚠️ Cursor thiếu nhiều</h4>
+                    <p style="color: var(--text-muted);">
+                        Cursor KHÔNG có native: Slash Command, Hook, Subagent, Power. Workaround đều phải hack qua Rule + manual invoke. Nếu workflow của team nặng về automation → cân nhắc Claude/Kiro hơn.
+                    </p>
+                </div>
+                <div class="card" style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.3);">
+                    <h4 style="color: var(--accent-primary);">🎯 Pattern wrapper</h4>
+                    <p style="color: var(--text-muted);">
+                        Khi cần 1 concept work cả 3 IDE → giữ <strong>canonical</strong> ở <span class="inline-code">.claude/skills/</span> (chi tiết nhất), tạo <strong>wrapper</strong> ở <span class="inline-code">.kiro/steering/</span> và <span class="inline-code">.cursor/rules/</span> trỏ về canonical bằng <span class="inline-code">#[[file:...]]</span> / <span class="inline-code">@file</span>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FRT DAILY TOOLKIT — Practical recipes from real sessions -->
+    <section id="frt-toolkit" style="background-color: rgba(255, 255, 255, 0.02);">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>🔧 FRT Daily Toolkit</h2>
+                <p>Những công thức thực tế đã build được — prompt mẫu, format chuẩn, setup recipe, anti-patterns gặp phải</p>
+            </div>
+
+            <!-- ━━━ Sub 1: Daily Prompt Templates ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">📝 1. Prompt Templates — Dùng Hằng Ngày</h3>
+
+                <div class="grid-3">
+                    <div class="card" style="border-top: 4px solid var(--accent-secondary);">
+                        <h4 style="color: var(--accent-secondary);">🎯 Single Task</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Task lẻ (FC-XXXXX, NTSALES-XXX)</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-secondary);">Claude Code:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>Bắt đầu task NTSALES-659
+cho repo oms-service (BE)</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-warning);">Kiro:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>#feature-startup-protocol
+#return-home-rules
+
+Task: NTSALES-659
+Repo: oms-service
+Context: thêm validation X</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-cursor);">Cursor:</p>
+<pre style="margin: 0.5rem 0;"><code>@feature-startup-protocol
+
+Implement NTSALES-659
+in oms-service</code></pre>
+                    </div>
+
+                    <div class="card" style="border-top: 4px solid var(--accent-warning);">
+                        <h4 style="color: var(--accent-warning);">🏔️ Whole Epic</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Epic với nhiều sub-task (1 repo scope)</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-secondary);">Claude Code:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>Bắt đầu epic FC-49988
+cho repo return-home (BE).
+Filter: [BE Return]</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-warning);">Kiro:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>#epic-startup-protocol
+
+Epic: FC-49988
+Target Repo: return-home (BE)
+Component filter: [BE Return]</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-cursor);">Cursor:</p>
+<pre style="margin: 0.5rem 0;"><code>@epic-startup-protocol
+
+Epic: FC-49988
+Target Repo: return-home</code></pre>
+                    </div>
+
+                    <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                        <h4 style="color: var(--accent-cursor);">📄 MR Summary</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Sau khi push, tạo task review cho TechLead</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-secondary);">Claude Code:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>/gen-mr-summary
+
+# hoặc với target khác:
+/gen-mr-summary release/...</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-warning);">Kiro:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>(bấm hook UI "Gen MR Summary"
+trong sidebar Kiro)</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-cursor);">Cursor:</p>
+<pre style="margin: 0.5rem 0;"><code>@gen-mr-summary
+
+# Chưa có hook tự động —
+# manual invoke trong chat</code></pre>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2);">
+                    <h4>🤔 Khi gặp prompt</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Sau khi anh prompt, AI sẽ:</p>
+                    <ol style="margin-left: 1.5rem; color: var(--text-muted);">
+                        <li><strong style="color: var(--text-main);">Gather context</strong> — gọi <span class="inline-code">execute_flow(b5_build)</span> (mandatory) → đọc Confluence linked → load steering</li>
+                        <li><strong style="color: var(--text-main);">Identify deps</strong> — list lib → tra Context7 cho mỗi cái</li>
+                        <li><strong style="color: var(--text-main);">Apply Karpathy</strong> — surface assumptions A1, A2... + surgical scope + success criteria</li>
+                        <li><strong style="color: var(--text-main);">🛑 STOP & confirm</strong> — present plan đầy đủ → đợi anh reply "Go"</li>
+                        <li><strong style="color: var(--text-main);">Implement loop</strong> — 1 atomic commit/lần → verify → /review-fix cuối</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- ━━━ Sub 2: MR Summary Format (FRT 6-line) ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">📋 2. MR Summary — Format Chuẩn FRT (6 dòng)</h3>
+
+                <div class="grid-2">
+                    <div class="card panel-good">
+                        <h4>✅ Format ĐÚNG (terse, plain text)</h4>
+<pre><code>- Link merge: https://git2.fptshop.com.vn/longchau/oms-service/-/merge_requests/45
+- Component: oms-service
+- Từ nhánh : features/datnp5-NTSALES-659-add-required-fields-return-ims
+- Tới nhánh : ci
+- Nội dung : Thêm [Required] vào Return Kafka ETO fields cho IMS mapping
+- Link Task : https://reqs.frt.vn/browse/NTSALES-659</code></pre>
+                        <p style="color: var(--accent-success); font-weight: 600; margin-top: 1rem;">→ Paste thẳng vào task tool nội bộ. Sếp review nhanh.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4>❌ Format SAI (markdown, dài dòng)</h4>
+                        <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                            <li>Có <span class="inline-code"># MR:</span>, <span class="inline-code">## Links</span>, <span class="inline-code">## Description</span></li>
+                            <li>Có Test Checklist / Quality Checklist</li>
+                            <li>Có Files Changed table</li>
+                            <li>Có Stats (lines +/-)</li>
+                            <li>"Nội dung" bằng English: "Implement validation..."</li>
+                            <li>"Nội dung" không có động từ đầu: "Tính năng mới chặn..."</li>
+                        </ul>
+                        <p style="color: var(--accent-danger); font-weight: 600; margin-top: 1rem;">→ Sếp ngán đọc, không review nổi.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem;">
+                    <h4>🎯 Rules quan trọng</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <p><strong style="color: var(--accent-secondary);">Component:</strong></p>
+                            <p style="color: var(--text-muted);">Auto-detect từ <span class="inline-code">git remote get-url origin</span>. KHÔNG hardcode "oms-service" vô prompt.</p>
+                        </div>
+                        <div>
+                            <p><strong style="color: var(--accent-warning);">Tới nhánh:</strong></p>
+                            <p style="color: var(--text-muted);">Default là <span class="inline-code">ci</span>. Khi pass CI → đổi sang <span class="inline-code">release/yyyymmdd-vx.x.x-lc</span>.</p>
+                        </div>
+                        <div>
+                            <p><strong style="color: var(--accent-success);">Nội dung:</strong></p>
+                            <p style="color: var(--text-muted);">Tiếng Việt, 5-15 từ, <strong>bắt đầu bằng động từ</strong>: Chặn / Thêm / Sửa / Fix / Refactor / Cập nhật / Tối ưu...</p>
+                        </div>
+                        <div>
+                            <p><strong style="color: var(--accent-cursor);">Link Task:</strong></p>
+                            <p style="color: var(--text-muted);">Multi-Jira OK. Detect từ branch name + commit messages. Comma-separated URLs.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ Sub 3: Setup Recipes ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">🛠️ 3. Setup Recipes — Pattern Đã Validated</h3>
+
+                <div class="grid-3">
+                    <!-- Recipe 1: Hybrid Skill Install -->
+                    <div class="card" style="border-top: 4px solid var(--accent-success);">
+                        <h4 style="color: var(--accent-success);">Recipe 1 — Hybrid Skill Install</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Canonical trong workspace + symlink global = single source of truth, team sync qua git</p>
+<pre><code>workspace/.claude/skills/X/SKILL.md  ← canonical (git)
+    ↑
+    │ ln -sf
+    │
+~/.claude/skills/X  ← global symlink</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Sửa workspace → global tự pickup. Team <span class="inline-code">git pull</span> = có ngay.</p>
+                    </div>
+
+                    <!-- Recipe 2: Cross-IDE Wrappers -->
+                    <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                        <h4 style="color: var(--accent-cursor);">Recipe 2 — Cross-IDE Wrappers</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">1 skill cho cả 3 IDE — Claude / Kiro / Cursor. Wrapper trỏ về canonical.</p>
+<pre><code>.claude/skills/X/SKILL.md  ← CANONICAL
+
+.kiro/steering/X.md
+  inclusion: manual
+  #[[file:../../.claude/skills/X/SKILL.md]]
+
+.cursor/rules/X.mdc
+  description: ...
+  @.claude/skills/X/SKILL.md</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Update 1 lần, work cả 3.</p>
+                    </div>
+
+                    <!-- Recipe 3: MCP User Scope -->
+                    <div class="card" style="border-top: 4px solid var(--accent-warning);">
+                        <h4 style="color: var(--accent-warning);">Recipe 3 — MCP User Scope</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">MCP work cho mọi repo, không scope per-project</p>
+<pre><code># Sai (per-project):
+cd repos/return-home
+claude mcp add ...
+# → chỉ work ở return-home
+
+# Đúng (user scope):
+claude mcp add --scope user ...
+# → work mọi repo
+
+# Hoặc edit ~/.claude.json
+# top-level "mcpServers"</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Sync từ Kiro: <span class="inline-code">sync-mcp-kiro-to-claude.sh</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ Sub 4: Lessons Learned ━━━ -->
+            <div class="animate-on-scroll">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">🎓 4. Lessons Learned — Anti-Patterns Đã Gặp</h3>
+
+                <div class="grid-2">
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 1: Token leak</h4>
+                        <p><strong>Tình huống:</strong> Paste mcp.json (kèm token) vào AI chat để hỏi config.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Token vào API log Anthropic + có thể leak qua re-share.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Mask tokens trước khi paste. Nếu lỡ paste → revoke + rotate ngay (4 tokens: JWT, GitLab PAT, Confluence, Jira).</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 2: Fallback mandatory tool</h4>
+                        <p><strong>Tình huống:</strong> Skill viết "<span class="inline-code">execute_flow OR jira_get_issue if unavailable</span>".</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> AI thấy execute_flow lỗi → tự fallback → violate company rule.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Mandatory = MANDATORY. Lỗi → STOP, báo user, đợi explicit override.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 3: Hardcode repo name</h4>
+                        <p><strong>Tình huống:</strong> Hook ghi <span class="inline-code">"repo oms-service (repos/oms-service)"</span> trong prompt.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Chạy ở return-home → AI vẫn nghĩ là oms-service → confused.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Detect dynamic qua <span class="inline-code">git remote get-url origin</span>.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 4: Format quá phức tạp</h4>
+                        <p><strong>Tình huống:</strong> MR Summary gen ra markdown 40+ dòng có checklist, table, stats.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Không paste được vào task tool nội bộ (chỉ chấp nhận 6 dòng terse).</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Check format SẾP/TEAM thực tế đang dùng trước khi gen. Đôi khi terse hơn = tốt hơn.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 5: Skill chỉ cài 1 IDE</h4>
+                        <p><strong>Tình huống:</strong> Cài skill <span class="inline-code">.claude/skills/</span> → tưởng work cả 3 IDE.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Khi switch sang Kiro/Cursor → skill invisible.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Tạo wrapper trong <span class="inline-code">.kiro/steering/</span> + <span class="inline-code">.cursor/rules/</span> trỏ về canonical.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 6: MCP scope sai</h4>
+                        <p><strong>Tình huống:</strong> <span class="inline-code">claude mcp add</span> trong 1 repo → tưởng global.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Sang repo khác → MCP missing → AI không gọi Jira/Confluence được.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Dùng <span class="inline-code">--scope user</span> hoặc edit <span class="inline-code">~/.claude.json</span> top-level <span class="inline-code">mcpServers</span>.</p>
+                    </div>
+                </div>
+
+                <!-- Quick reference card -->
+                <div class="card" style="margin-top: 2.5rem; background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.08)); border: 1px solid rgba(139,92,246,0.3);">
+                    <h4>📑 Quick Reference — Toolkit đã build trong workspace</h4>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Khi nào dùng</th>
+                                    <th>Tool / Skill / Command</th>
+                                    <th>Trigger</th>
+                                    <th>Output</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Bắt đầu task lẻ</td>
+                                    <td><span class="inline-code">feature-startup-protocol</span> skill</td>
+                                    <td>Keyword "bắt đầu task" / <span class="inline-code">#feature-startup-protocol</span></td>
+                                    <td>5-phase plan + STOP confirm</td>
+                                </tr>
+                                <tr>
+                                    <td>Bắt đầu epic</td>
+                                    <td><span class="inline-code">epic-startup-protocol</span> skill</td>
+                                    <td>Keyword "bắt đầu epic" / <span class="inline-code">#epic-startup-protocol</span></td>
+                                    <td>Children enum + filter + consolidated spec</td>
+                                </tr>
+                                <tr>
+                                    <td>Code refactor / write</td>
+                                    <td><span class="inline-code">karpathy-guidelines</span> skill</td>
+                                    <td>Auto khi viết/sửa code</td>
+                                    <td>Think before code, surgical, success criteria</td>
+                                </tr>
+                                <tr>
+                                    <td>Sau khi push</td>
+                                    <td><span class="inline-code">/gen-mr-summary</span> command</td>
+                                    <td>User gõ <span class="inline-code">/gen-mr-summary</span> hoặc auto reminder hook</td>
+                                    <td>6-line FRT format</td>
+                                </tr>
+                                <tr>
+                                    <td>Self-review pushed code</td>
+                                    <td><span class="inline-code">/review-branch</span> command</td>
+                                    <td>User gõ <span class="inline-code">/review-branch</span></td>
+                                    <td>Predict TechLead verdict (PASS/FAIL)</td>
+                                </tr>
+                                <tr>
+                                    <td>Self-review unpushed code</td>
+                                    <td><span class="inline-code">/review-fix</span> command</td>
+                                    <td>User gõ <span class="inline-code">/review-fix</span></td>
+                                    <td>Find + auto-fix CRITICAL/MAJOR</td>
+                                </tr>
+                                <tr>
+                                    <td>Sync MCP Kiro → Claude Code</td>
+                                    <td><span class="inline-code">sync-mcp-kiro-to-claude.sh</span></td>
+                                    <td>Bash script (1 lần)</td>
+                                    <td>~/.claude.json user-scope MCP</td>
+                                </tr>
+                                <tr>
+                                    <td>Đọc Confluence/Jira/GitLab</td>
+                                    <td>MCP <span class="inline-code">ai-context-engine-company</span></td>
+                                    <td>AI tự gọi tool (jira_get_issue, execute_flow...)</td>
+                                    <td>Raw data từ FRT internal</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section animate-on-scroll">
+        <div class="container">
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Sẵn sàng tối ưu Workflow?</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">Bắt đầu bằng việc tạo <span class="inline-code" style="color: white">AGENTS.md</span> + <span class="inline-code" style="color: white">docs/</span> — rồi mới phủ tool config lên.</p>
+            <button class="btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">Lên đầu trang 🚀</button>
+        </div>
+    </section>
+
+    <script>
+        // Intersection Observer for scroll animations
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+            document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+        });
+    </script>
+</body>
+</html>
