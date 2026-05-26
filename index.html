@@ -257,6 +257,7 @@
                     <li><a href="#concepts">Khái niệm</a></li>
                     <li><a href="#workspace-tree">Cây workspace</a></li>
                     <li><a href="#combination">Quy trình</a></li>
+                    <li><a href="#frt-toolkit">FRT Toolkit</a></li>
                     <li><a href="#summary">Đối chiếu</a></li>
                 </ul>
             </nav>
@@ -1042,84 +1043,468 @@ alwaysApply: false
             </div>
 
             <div class="table-wrapper">
-                <table>
+                <table style="font-size: 0.92rem;">
                     <thead>
                         <tr>
                             <th>Khái niệm</th>
+                            <th>IDE chủ</th>
                             <th>Đặt ở đâu</th>
                             <th>Kích hoạt</th>
                             <th>Để làm gì?</th>
+                            <th>Tương đương ở IDE khác</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td><strong>AGENTS.md</strong></td>
+                            <td><span style="color: var(--accent-success);">Universal</span></td>
                             <td>Project root</td>
                             <td>Auto load</td>
                             <td>Universal context (chung mọi AI)</td>
+                            <td><strong>Tự nó là cross-IDE</strong> — cả 3 đều đọc qua <span class="inline-code">@AGENTS.md</span> reference</td>
                         </tr>
                         <tr>
                             <td><strong>CLAUDE.md</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
                             <td>Project root</td>
                             <td>Auto load (Claude Code)</td>
                             <td>Entry point context cho Claude Code</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> <span class="inline-code">.kiro/steering/product.md</span> (inclusion: always)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> <span class="inline-code">.cursor/rules/main.mdc</span> (alwaysApply: true) hoặc <span class="inline-code">.cursorrules</span> (legacy)
+                            </td>
                         </tr>
                         <tr>
                             <td style="color: var(--accent-cursor);"><strong>Cursor Rules</strong></td>
+                            <td><span style="color: var(--accent-cursor);">Cursor</span></td>
                             <td><span class="inline-code">.cursor/rules/*.mdc</span></td>
                             <td>alwaysApply / globs / description / manual</td>
                             <td>Behavior layer cho Cursor IDE</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> CLAUDE.md (always) + Skills (auto-trigger)<br>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> Steering (3 modes: always / fileMatch / manual)
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Steering</strong></td>
+                            <td><span style="color: var(--accent-warning);">Kiro</span></td>
                             <td><span class="inline-code">.kiro/steering/*.md</span></td>
                             <td>always / fileMatch / manual</td>
                             <td>Hành vi AI lâu dài (Kiro)</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> CLAUDE.md (always) + Skills (description match)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> <span class="inline-code">.cursor/rules/*.mdc</span> (4 modes)
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Slash Command</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
                             <td><span class="inline-code">.claude/commands/*.md</span></td>
                             <td>User gõ <span class="inline-code">/name</span></td>
                             <td>Workflow rút gọn, lặp lại</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> Hook userTriggered (nút bấm UI)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A native — workaround: rule với <span class="inline-code">@rule-name</span> manual invoke
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Skill</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
                             <td><span class="inline-code">.claude/skills/*/SKILL.md</span></td>
-                            <td>AI <strong>tự</strong> kích hoạt</td>
+                            <td>AI <strong>tự</strong> kích hoạt theo description</td>
                             <td>Capability đóng gói (script, best practice)</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> Skill (<span class="inline-code">.kiro/skills/</span>) — pattern tương tự<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> Rule với mode <span class="inline-code">description</span> (AI auto-load theo context)
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Hook</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude</span> & <span style="color: var(--accent-warning);">Kiro</span></td>
                             <td><span class="inline-code">settings.json</span> / <span class="inline-code">.kiro/hooks/</span></td>
                             <td>Theo event hoặc nút bấm</td>
                             <td>Tự động hóa task</td>
+                            <td>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A native — workaround: external (cron job, OS hooks, git hooks)
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>MCP</strong></td>
+                            <td><span style="color: var(--accent-success);">Universal</span></td>
                             <td><span class="inline-code">settings.json</span> (mcpServers) — cả 3 IDE</td>
                             <td>AI gọi tool</td>
                             <td>Cầu nối tools ngoài (raw)</td>
+                            <td>
+                                <strong>Cùng protocol cho cả 3</strong> — khác vị trí config:<br>
+                                <span class="inline-code">.claude/settings.json</span> · <span class="inline-code">.kiro/settings/mcp.json</span> · <span class="inline-code">.cursor/mcp.json</span>
+                            </td>
                         </tr>
                         <tr>
                             <td><strong>Subagent</strong></td>
+                            <td><span style="color: var(--accent-secondary);">Claude Code</span></td>
                             <td><span class="inline-code">.claude/agents/*.md</span></td>
                             <td><span class="inline-code">@name</span> hoặc auto delegate</td>
                             <td>Persona chuyên môn, không nhiễu context</td>
+                            <td>
+                                <strong style="color: var(--accent-warning);">Kiro:</strong> ⚠️ N/A native — workaround: Skill với persona-specific prompt<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A — workaround: Rule manual với system prompt riêng
+                            </td>
                         </tr>
                         <tr>
                             <td style="color: var(--accent-success);"><strong>Spec</strong></td>
+                            <td><span style="color: var(--accent-warning);">Kiro</span></td>
                             <td><span class="inline-code">specs/&lt;feature&gt;/</span></td>
                             <td>User mở spec workflow</td>
                             <td>Plan tính năng có cấu trúc (Req → Design)</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> <span class="inline-code">specs/</span> folder + Skill orchestrator (vd: <span class="inline-code">feature-startup-protocol</span>)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> <span class="inline-code">specs/</span> folder + Rule manual orchestrator
+                            </td>
                         </tr>
                         <tr>
                             <td style="color: var(--accent-warning);"><strong>Power</strong></td>
+                            <td><span style="color: var(--accent-warning);">Kiro</span></td>
                             <td>Cài qua Configure Powers (Kiro)</td>
                             <td>AI tự dùng khi cần</td>
                             <td>Plugin đóng gói (Figma, Postman)</td>
+                            <td>
+                                <strong style="color: var(--accent-secondary);">Claude:</strong> Skill (Anthropic registry) + MCP (custom config)<br>
+                                <strong style="color: var(--accent-cursor);">Cursor:</strong> ⚠️ N/A — chỉ có MCP qua config tay
+                            </td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Legend / Note dưới bảng -->
+            <div style="margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                <div class="card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <h4 style="color: var(--accent-success);">✅ Universal concepts</h4>
+                    <p style="color: var(--text-muted);">
+                        <strong>AGENTS.md</strong> và <strong>MCP</strong> là cross-IDE chuẩn — cài 1 lần, work cả 3. Đây là <strong>điểm an toàn nhất</strong> để invest công sức.
+                    </p>
+                </div>
+                <div class="card" style="background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <h4 style="color: var(--accent-warning);">⚠️ Cursor thiếu nhiều</h4>
+                    <p style="color: var(--text-muted);">
+                        Cursor KHÔNG có native: Slash Command, Hook, Subagent, Power. Workaround đều phải hack qua Rule + manual invoke. Nếu workflow của team nặng về automation → cân nhắc Claude/Kiro hơn.
+                    </p>
+                </div>
+                <div class="card" style="background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.3);">
+                    <h4 style="color: var(--accent-primary);">🎯 Pattern wrapper</h4>
+                    <p style="color: var(--text-muted);">
+                        Khi cần 1 concept work cả 3 IDE → giữ <strong>canonical</strong> ở <span class="inline-code">.claude/skills/</span> (chi tiết nhất), tạo <strong>wrapper</strong> ở <span class="inline-code">.kiro/steering/</span> và <span class="inline-code">.cursor/rules/</span> trỏ về canonical bằng <span class="inline-code">#[[file:...]]</span> / <span class="inline-code">@file</span>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FRT DAILY TOOLKIT — Practical recipes from real sessions -->
+    <section id="frt-toolkit" style="background-color: rgba(255, 255, 255, 0.02);">
+        <div class="container animate-on-scroll">
+            <div class="section-header">
+                <h2>🔧 FRT Daily Toolkit</h2>
+                <p>Những công thức thực tế đã build được — prompt mẫu, format chuẩn, setup recipe, anti-patterns gặp phải</p>
+            </div>
+
+            <!-- ━━━ Sub 1: Daily Prompt Templates ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">📝 1. Prompt Templates — Dùng Hằng Ngày</h3>
+
+                <div class="grid-3">
+                    <div class="card" style="border-top: 4px solid var(--accent-secondary);">
+                        <h4 style="color: var(--accent-secondary);">🎯 Single Task</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Task lẻ (FC-XXXXX, NTSALES-XXX)</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-secondary);">Claude Code:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>Bắt đầu task NTSALES-659
+cho repo oms-service (BE)</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-warning);">Kiro:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>#feature-startup-protocol
+#return-home-rules
+
+Task: NTSALES-659
+Repo: oms-service
+Context: thêm validation X</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-cursor);">Cursor:</p>
+<pre style="margin: 0.5rem 0;"><code>@feature-startup-protocol
+
+Implement NTSALES-659
+in oms-service</code></pre>
+                    </div>
+
+                    <div class="card" style="border-top: 4px solid var(--accent-warning);">
+                        <h4 style="color: var(--accent-warning);">🏔️ Whole Epic</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Epic với nhiều sub-task (1 repo scope)</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-secondary);">Claude Code:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>Bắt đầu epic FC-49988
+cho repo return-home (BE).
+Filter: [BE Return]</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-warning);">Kiro:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>#epic-startup-protocol
+
+Epic: FC-49988
+Target Repo: return-home (BE)
+Component filter: [BE Return]</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-cursor);">Cursor:</p>
+<pre style="margin: 0.5rem 0;"><code>@epic-startup-protocol
+
+Epic: FC-49988
+Target Repo: return-home</code></pre>
+                    </div>
+
+                    <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                        <h4 style="color: var(--accent-cursor);">📄 MR Summary</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Sau khi push, tạo task review cho TechLead</p>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-secondary);">Claude Code:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>/gen-mr-summary
+
+# hoặc với target khác:
+/gen-mr-summary release/...</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-warning);">Kiro:</p>
+<pre style="margin: 0.5rem 0 1rem 0;"><code>(bấm hook UI "Gen MR Summary"
+trong sidebar Kiro)</code></pre>
+                        <p style="font-weight: 700; font-size: 0.9rem; color: var(--accent-cursor);">Cursor:</p>
+<pre style="margin: 0.5rem 0;"><code>@gen-mr-summary
+
+# Chưa có hook tự động —
+# manual invoke trong chat</code></pre>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2);">
+                    <h4>🤔 Khi gặp prompt</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Sau khi anh prompt, AI sẽ:</p>
+                    <ol style="margin-left: 1.5rem; color: var(--text-muted);">
+                        <li><strong style="color: var(--text-main);">Gather context</strong> — gọi <span class="inline-code">execute_flow(b5_build)</span> (mandatory) → đọc Confluence linked → load steering</li>
+                        <li><strong style="color: var(--text-main);">Identify deps</strong> — list lib → tra Context7 cho mỗi cái</li>
+                        <li><strong style="color: var(--text-main);">Apply Karpathy</strong> — surface assumptions A1, A2... + surgical scope + success criteria</li>
+                        <li><strong style="color: var(--text-main);">🛑 STOP & confirm</strong> — present plan đầy đủ → đợi anh reply "Go"</li>
+                        <li><strong style="color: var(--text-main);">Implement loop</strong> — 1 atomic commit/lần → verify → /review-fix cuối</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- ━━━ Sub 2: MR Summary Format (FRT 6-line) ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">📋 2. MR Summary — Format Chuẩn FRT (6 dòng)</h3>
+
+                <div class="grid-2">
+                    <div class="card panel-good">
+                        <h4>✅ Format ĐÚNG (terse, plain text)</h4>
+<pre><code>- Link merge: https://git2.fptshop.com.vn/longchau/oms-service/-/merge_requests/45
+- Component: oms-service
+- Từ nhánh : features/datnp5-NTSALES-659-add-required-fields-return-ims
+- Tới nhánh : ci
+- Nội dung : Thêm [Required] vào Return Kafka ETO fields cho IMS mapping
+- Link Task : https://reqs.frt.vn/browse/NTSALES-659</code></pre>
+                        <p style="color: var(--accent-success); font-weight: 600; margin-top: 1rem;">→ Paste thẳng vào task tool nội bộ. Sếp review nhanh.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4>❌ Format SAI (markdown, dài dòng)</h4>
+                        <ul style="margin-left: 1.5rem; color: var(--text-muted);">
+                            <li>Có <span class="inline-code"># MR:</span>, <span class="inline-code">## Links</span>, <span class="inline-code">## Description</span></li>
+                            <li>Có Test Checklist / Quality Checklist</li>
+                            <li>Có Files Changed table</li>
+                            <li>Có Stats (lines +/-)</li>
+                            <li>"Nội dung" bằng English: "Implement validation..."</li>
+                            <li>"Nội dung" không có động từ đầu: "Tính năng mới chặn..."</li>
+                        </ul>
+                        <p style="color: var(--accent-danger); font-weight: 600; margin-top: 1rem;">→ Sếp ngán đọc, không review nổi.</p>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem;">
+                    <h4>🎯 Rules quan trọng</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <p><strong style="color: var(--accent-secondary);">Component:</strong></p>
+                            <p style="color: var(--text-muted);">Auto-detect từ <span class="inline-code">git remote get-url origin</span>. KHÔNG hardcode "oms-service" vô prompt.</p>
+                        </div>
+                        <div>
+                            <p><strong style="color: var(--accent-warning);">Tới nhánh:</strong></p>
+                            <p style="color: var(--text-muted);">Default là <span class="inline-code">ci</span>. Khi pass CI → đổi sang <span class="inline-code">release/yyyymmdd-vx.x.x-lc</span>.</p>
+                        </div>
+                        <div>
+                            <p><strong style="color: var(--accent-success);">Nội dung:</strong></p>
+                            <p style="color: var(--text-muted);">Tiếng Việt, 5-15 từ, <strong>bắt đầu bằng động từ</strong>: Chặn / Thêm / Sửa / Fix / Refactor / Cập nhật / Tối ưu...</p>
+                        </div>
+                        <div>
+                            <p><strong style="color: var(--accent-cursor);">Link Task:</strong></p>
+                            <p style="color: var(--text-muted);">Multi-Jira OK. Detect từ branch name + commit messages. Comma-separated URLs.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ Sub 3: Setup Recipes ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">🛠️ 3. Setup Recipes — Pattern Đã Validated</h3>
+
+                <div class="grid-3">
+                    <!-- Recipe 1: Hybrid Skill Install -->
+                    <div class="card" style="border-top: 4px solid var(--accent-success);">
+                        <h4 style="color: var(--accent-success);">Recipe 1 — Hybrid Skill Install</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Canonical trong workspace + symlink global = single source of truth, team sync qua git</p>
+<pre><code>workspace/.claude/skills/X/SKILL.md  ← canonical (git)
+    ↑
+    │ ln -sf
+    │
+~/.claude/skills/X  ← global symlink</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Sửa workspace → global tự pickup. Team <span class="inline-code">git pull</span> = có ngay.</p>
+                    </div>
+
+                    <!-- Recipe 2: Cross-IDE Wrappers -->
+                    <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                        <h4 style="color: var(--accent-cursor);">Recipe 2 — Cross-IDE Wrappers</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">1 skill cho cả 3 IDE — Claude / Kiro / Cursor. Wrapper trỏ về canonical.</p>
+<pre><code>.claude/skills/X/SKILL.md  ← CANONICAL
+
+.kiro/steering/X.md
+  inclusion: manual
+  #[[file:../../.claude/skills/X/SKILL.md]]
+
+.cursor/rules/X.mdc
+  description: ...
+  @.claude/skills/X/SKILL.md</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Update 1 lần, work cả 3.</p>
+                    </div>
+
+                    <!-- Recipe 3: MCP User Scope -->
+                    <div class="card" style="border-top: 4px solid var(--accent-warning);">
+                        <h4 style="color: var(--accent-warning);">Recipe 3 — MCP User Scope</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">MCP work cho mọi repo, không scope per-project</p>
+<pre><code># Sai (per-project):
+cd repos/return-home
+claude mcp add ...
+# → chỉ work ở return-home
+
+# Đúng (user scope):
+claude mcp add --scope user ...
+# → work mọi repo
+
+# Hoặc edit ~/.claude.json
+# top-level "mcpServers"</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Sync từ Kiro: <span class="inline-code">sync-mcp-kiro-to-claude.sh</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ Sub 4: Lessons Learned ━━━ -->
+            <div class="animate-on-scroll">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">🎓 4. Lessons Learned — Anti-Patterns Đã Gặp</h3>
+
+                <div class="grid-2">
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 1: Token leak</h4>
+                        <p><strong>Tình huống:</strong> Paste mcp.json (kèm token) vào AI chat để hỏi config.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Token vào API log Anthropic + có thể leak qua re-share.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Mask tokens trước khi paste. Nếu lỡ paste → revoke + rotate ngay (4 tokens: JWT, GitLab PAT, Confluence, Jira).</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 2: Fallback mandatory tool</h4>
+                        <p><strong>Tình huống:</strong> Skill viết "<span class="inline-code">execute_flow OR jira_get_issue if unavailable</span>".</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> AI thấy execute_flow lỗi → tự fallback → violate company rule.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Mandatory = MANDATORY. Lỗi → STOP, báo user, đợi explicit override.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 3: Hardcode repo name</h4>
+                        <p><strong>Tình huống:</strong> Hook ghi <span class="inline-code">"repo oms-service (repos/oms-service)"</span> trong prompt.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Chạy ở return-home → AI vẫn nghĩ là oms-service → confused.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Detect dynamic qua <span class="inline-code">git remote get-url origin</span>.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 4: Format quá phức tạp</h4>
+                        <p><strong>Tình huống:</strong> MR Summary gen ra markdown 40+ dòng có checklist, table, stats.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Không paste được vào task tool nội bộ (chỉ chấp nhận 6 dòng terse).</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Check format SẾP/TEAM thực tế đang dùng trước khi gen. Đôi khi terse hơn = tốt hơn.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 5: Skill chỉ cài 1 IDE</h4>
+                        <p><strong>Tình huống:</strong> Cài skill <span class="inline-code">.claude/skills/</span> → tưởng work cả 3 IDE.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Khi switch sang Kiro/Cursor → skill invisible.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Tạo wrapper trong <span class="inline-code">.kiro/steering/</span> + <span class="inline-code">.cursor/rules/</span> trỏ về canonical.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 6: MCP scope sai</h4>
+                        <p><strong>Tình huống:</strong> <span class="inline-code">claude mcp add</span> trong 1 repo → tưởng global.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Sang repo khác → MCP missing → AI không gọi Jira/Confluence được.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Dùng <span class="inline-code">--scope user</span> hoặc edit <span class="inline-code">~/.claude.json</span> top-level <span class="inline-code">mcpServers</span>.</p>
+                    </div>
+                </div>
+
+                <!-- Quick reference card -->
+                <div class="card" style="margin-top: 2.5rem; background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(6,182,212,0.08)); border: 1px solid rgba(139,92,246,0.3);">
+                    <h4>📑 Quick Reference — Toolkit đã build trong workspace</h4>
+                    <div class="table-wrapper" style="margin-top: 1rem;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Khi nào dùng</th>
+                                    <th>Tool / Skill / Command</th>
+                                    <th>Trigger</th>
+                                    <th>Output</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Bắt đầu task lẻ</td>
+                                    <td><span class="inline-code">feature-startup-protocol</span> skill</td>
+                                    <td>Keyword "bắt đầu task" / <span class="inline-code">#feature-startup-protocol</span></td>
+                                    <td>5-phase plan + STOP confirm</td>
+                                </tr>
+                                <tr>
+                                    <td>Bắt đầu epic</td>
+                                    <td><span class="inline-code">epic-startup-protocol</span> skill</td>
+                                    <td>Keyword "bắt đầu epic" / <span class="inline-code">#epic-startup-protocol</span></td>
+                                    <td>Children enum + filter + consolidated spec</td>
+                                </tr>
+                                <tr>
+                                    <td>Code refactor / write</td>
+                                    <td><span class="inline-code">karpathy-guidelines</span> skill</td>
+                                    <td>Auto khi viết/sửa code</td>
+                                    <td>Think before code, surgical, success criteria</td>
+                                </tr>
+                                <tr>
+                                    <td>Sau khi push</td>
+                                    <td><span class="inline-code">/gen-mr-summary</span> command</td>
+                                    <td>User gõ <span class="inline-code">/gen-mr-summary</span> hoặc auto reminder hook</td>
+                                    <td>6-line FRT format</td>
+                                </tr>
+                                <tr>
+                                    <td>Self-review pushed code</td>
+                                    <td><span class="inline-code">/review-branch</span> command</td>
+                                    <td>User gõ <span class="inline-code">/review-branch</span></td>
+                                    <td>Predict TechLead verdict (PASS/FAIL)</td>
+                                </tr>
+                                <tr>
+                                    <td>Self-review unpushed code</td>
+                                    <td><span class="inline-code">/review-fix</span> command</td>
+                                    <td>User gõ <span class="inline-code">/review-fix</span></td>
+                                    <td>Find + auto-fix CRITICAL/MAJOR</td>
+                                </tr>
+                                <tr>
+                                    <td>Sync MCP Kiro → Claude Code</td>
+                                    <td><span class="inline-code">sync-mcp-kiro-to-claude.sh</span></td>
+                                    <td>Bash script (1 lần)</td>
+                                    <td>~/.claude.json user-scope MCP</td>
+                                </tr>
+                                <tr>
+                                    <td>Đọc Confluence/Jira/GitLab</td>
+                                    <td>MCP <span class="inline-code">ai-context-engine-company</span></td>
+                                    <td>AI tự gọi tool (jira_get_issue, execute_flow...)</td>
+                                    <td>Raw data từ FRT internal</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
