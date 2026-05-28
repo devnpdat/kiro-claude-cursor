@@ -101,7 +101,7 @@
         .nav-dropdown-item .item-label { flex: 1; white-space: nowrap; }
         .nav-dropdown-item .item-badge {
             font-size: 0.7rem; padding: 0.15rem 0.5rem;
-            border-radius: 10px; font-weight: 700;
+            border-radius: 10px; font-weight: 700; white-space: nowrap;
         }
         .badge-active { background: rgba(16,185,129,0.2); color: #10b981; }
         .badge-new { background: rgba(249,115,22,0.2); color: #f97316; }
@@ -2215,6 +2215,22 @@ Dùng $ARGUMENTS làm target branch override nếu user cung cấp.</code></pre>
                 });
             });
         });
+
+        // --- Block DevTools ---
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F12') { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && ['I','i','J','j','C','c'].includes(e.key)) { e.preventDefault(); return false; }
+            if (e.ctrlKey && ['U','u'].includes(e.key)) { e.preventDefault(); return false; }
+            if (e.metaKey && e.altKey && ['I','i'].includes(e.key)) { e.preventDefault(); return false; }
+        });
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+        setInterval(() => {
+            if (window.outerWidth - window.innerWidth > 160 || window.outerHeight - window.innerHeight > 160) {
+                document.body.style.filter = 'blur(20px)';
+            } else {
+                document.body.style.filter = '';
+            }
+        }, 1000);
 
         // Intersection Observer for scroll animations + safety fallback
         document.addEventListener('DOMContentLoaded', () => {
