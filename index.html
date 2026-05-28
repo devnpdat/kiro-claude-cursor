@@ -613,6 +613,42 @@ Bước 4: Confirm trước khi save.</code></pre>
 }</code></pre>
                     <p style="color: var(--accent-danger); font-weight: bold;">⚠️ Lưu ý: Add mcp.json vào .gitignore, KHÔNG commit token lên Git!</p>
                 </div>
+
+                <div class="card" style="margin-top: 2rem; background: rgba(6, 182, 212, 0.05); border: 1px solid rgba(6, 182, 212, 0.2);">
+                    <h4>🔄 FRT: Keycloak JWT hết hạn mỗi ngày — Giải pháp Auto-Refresh</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Token trong <span class="inline-code">.kiro/settings/mcp.json</span> expire sau ~24h. Hệ thống auto-refresh gồm 3 trigger:</p>
+
+                    <div class="grid-2" style="gap: 1rem; margin-bottom: 1rem;">
+                        <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
+                            <p style="font-weight: 700; color: var(--accent-secondary); margin-bottom: 0.5rem;">⏰ Scheduled — 7:30 sáng tự động</p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;"><span class="inline-code">launchd</span> gọi core script mỗi sáng trước giờ làm. Token luôn fresh khi bắt đầu ngày.</p>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem;">
+                            <p style="font-weight: 700; color: var(--accent-warning); margin-bottom: 0.5rem;">⌨️ On-demand — gõ 1 lệnh</p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Alias <span class="inline-code">frt-refresh</span> gọi core script bất kỳ lúc nào token hết hạn giữa chừng.</p>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 1rem; grid-column: 1 / -1;">
+                            <p style="font-weight: 700; color: var(--accent-success); margin-bottom: 0.5rem;">🔍 On-401 — auto detect không cần làm gì</p>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Kiro hook + Claude Code PostToolUse detect lỗi <span class="inline-code">401/Unauthorized</span> từ MCP call → tự gọi script → thông báo reconnect. Zero friction.</p>
+                        </div>
+                    </div>
+
+                    <p style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Cơ chế:</p>
+                    <ol style="margin-left: 1.5rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        <li>Core script đọc <span class="inline-code">refresh_token</span> từ <strong>macOS Keychain</strong> (an toàn, không plain text)</li>
+                        <li>POST lên Keycloak endpoint → nhận <span class="inline-code">access_token</span> mới</li>
+                        <li>Update <span class="inline-code">Authorization</span> header trong <span class="inline-code">.kiro/settings/mcp.json</span></li>
+                        <li>Chạy <span class="inline-code">sync-mcp-kiro-to-claude.sh</span> → sync sang <span class="inline-code">~/.claude.json</span></li>
+                    </ol>
+
+                    <p style="font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Setup (1 lần duy nhất):</p>
+<pre style="margin: 0 0 1rem 0;"><code># Nhập password 1 lần → lưu refresh_token vào Keychain → cài launchd + alias
+bash ~/Works/FRT/ai-native-client/install-refresh-token-auto.sh
+
+# Sau đó chỉ cần gõ khi cần on-demand
+frt-refresh</code></pre>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Log: <span class="inline-code">cat /tmp/frt-token-refresh.log</span> · Script: <span class="inline-code">~/.claude/scripts/frt-refresh-token.sh</span></p>
+                </div>
             </div>
 
             <!-- 8. Subagent -->
@@ -1036,7 +1072,7 @@ alwaysApply: false
 
     <!-- Summary Table Section -->
     <section id="summary">
-        <div class="container animate-on-scroll">
+        <div class="container">
             <div class="section-header">
                 <h2>Bảng Đối Chiếu (11 Khái Niệm)</h2>
                 <p>Tóm tắt nhanh để phân biệt</p>
@@ -1202,7 +1238,7 @@ alwaysApply: false
 
     <!-- FRT DAILY TOOLKIT — Practical recipes from real sessions -->
     <section id="frt-toolkit" style="background-color: rgba(255, 255, 255, 0.02);">
-        <div class="container animate-on-scroll">
+        <div class="container">
             <div class="section-header">
                 <h2>🔧 FRT Daily Toolkit</h2>
                 <p>Những công thức thực tế đã build được — prompt mẫu, format chuẩn, setup recipe, anti-patterns gặp phải</p>
@@ -1273,15 +1309,18 @@ trong sidebar Kiro)</code></pre>
                 </div>
 
                 <div class="card" style="margin-top: 2rem; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2);">
-                    <h4>🤔 Khi gặp prompt</h4>
-                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Sau khi anh prompt, AI sẽ:</p>
+                    <h4>🤔 Khi gặp prompt task NT, AI sẽ làm gì (cả 3 IDE)</h4>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">feature-startup-protocol skill chạy 6 phase (Phase 3 có sub-step mới):</p>
                     <ol style="margin-left: 1.5rem; color: var(--text-muted);">
-                        <li><strong style="color: var(--text-main);">Gather context</strong> — gọi <span class="inline-code">execute_flow(b5_build)</span> (mandatory) → đọc Confluence linked → load steering</li>
+                        <li><strong style="color: var(--text-main);">Gather context</strong> — gọi <span class="inline-code">execute_flow(b5_build)</span> <span style="color: var(--accent-danger);">(MANDATORY, không fallback)</span> → đọc Confluence linked → load steering</li>
                         <li><strong style="color: var(--text-main);">Identify deps</strong> — list lib → tra Context7 cho mỗi cái</li>
-                        <li><strong style="color: var(--text-main);">Apply Karpathy</strong> — surface assumptions A1, A2... + surgical scope + success criteria</li>
-                        <li><strong style="color: var(--text-main);">🛑 STOP & confirm</strong> — present plan đầy đủ → đợi anh reply "Go"</li>
-                        <li><strong style="color: var(--text-main);">Implement loop</strong> — 1 atomic commit/lần → verify → /review-fix cuối</li>
+                        <li><strong style="color: var(--text-main);">Apply Karpathy</strong> — surface assumptions A1, A2... + surgical scope + success criteria → <strong style="color: var(--accent-secondary);">🆕 tạo file <span class="inline-code">specs/&lt;JIRA-KEY&gt;/plan.md</span></strong> với bảng APIs sorted Easy→Hard + section "Dev Review Notes" để anh edit</li>
+                        <li><strong style="color: var(--text-main);">🛑 STOP & confirm</strong> — thông báo path <span class="inline-code">plan.md</span> ngắn gọn → anh <strong>mở file, review + edit logic từng API</strong>, reply "Go" khi xong <span style="color: var(--text-muted);">(không present plan dài trong chat)</span></li>
+                        <li><strong style="color: var(--text-main);">Implement loop</strong> — 1 atomic commit/lần theo thứ tự trong plan.md → verify success criteria → update cột Status <span class="inline-code">TODO→DONE</span></li>
+                        <li><strong style="color: var(--accent-success);">MANDATORY Self-Review</strong> — auto invoke <span class="inline-code">nt-review</span> skill (cross-IDE: <span class="inline-code">/nt-review</span> Claude / <span class="inline-code">#nt-review</span> Kiro / <span class="inline-code">@nt-review</span> Cursor) → output file <span class="inline-code">docs/reviews/&lt;branch&gt;_review_&lt;time&gt;.md</span>. Nếu FAIL → auto <span class="inline-code">nt-fix-review</span> → loop tới PASS.</li>
                     </ol>
+                    <p style="color: var(--accent-secondary); margin-top: 1rem; font-weight: 600;">🆕 Phase 3.5: plan.md persist cross-session, shareable với team, work ở cả 3 IDE (path <span class="inline-code">$NT_WORKSPACE/specs/</span> là absolute).</p>
+                    <p style="color: var(--accent-success); margin-top: 0.5rem; font-weight: 600;">→ AI KHÔNG báo "xong" khi nt-review verdict = FAIL. Anh không phải nhớ gì.</p>
                 </div>
             </div>
 
@@ -1340,14 +1379,14 @@ trong sidebar Kiro)</code></pre>
 
             <!-- ━━━ Sub 3: Setup Recipes ━━━ -->
             <div class="animate-on-scroll" style="margin-bottom: 5rem;">
-                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">🛠️ 3. Setup Recipes — Pattern Đã Validated</h3>
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">🛠️ 3. Setup Recipes — 4 Pattern Đã Validated</h3>
 
-                <div class="grid-3">
+                <div class="grid-4" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
                     <!-- Recipe 1: Hybrid Skill Install -->
                     <div class="card" style="border-top: 4px solid var(--accent-success);">
                         <h4 style="color: var(--accent-success);">Recipe 1 — Hybrid Skill Install</h4>
                         <p style="color: var(--text-muted); margin-bottom: 1rem;">Canonical trong workspace + symlink global = single source of truth, team sync qua git</p>
-<pre><code>workspace/.claude/skills/X/SKILL.md  ← canonical (git)
+<pre><code>workspace/.claude/skills/X/SKILL.md  ← canonical
     ↑
     │ ln -sf
     │
@@ -1371,9 +1410,26 @@ trong sidebar Kiro)</code></pre>
                         <p style="color: var(--text-muted); margin-top: 1rem;">Update 1 lần, work cả 3.</p>
                     </div>
 
-                    <!-- Recipe 3: MCP User Scope -->
+                    <!-- Recipe 3: Skill + Command Wrapper -->
+                    <div class="card" style="border-top: 4px solid var(--accent-primary);">
+                        <h4 style="color: var(--accent-primary);">Recipe 3 — Skill + Command Wrapper</h4>
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">Skill là source of truth, command là quick-invoke. Cross-IDE work nhờ skill.</p>
+<pre><code>.claude/skills/nt-review/
+  └── SKILL.md           ← CANONICAL
+
+.claude/commands/
+  └── nt-review.md       ← thin wrapper
+                            "@.claude/skills/
+                              nt-review/SKILL.md"
+
+.kiro/steering/nt-review.md  ← thin wrapper
+.cursor/rules/nt-review.mdc  ← thin wrapper</code></pre>
+                        <p style="color: var(--text-muted); margin-top: 1rem;">Claude Code: <span class="inline-code">/nt-review</span>. Kiro: <span class="inline-code">#nt-review</span>. Cursor: <span class="inline-code">@nt-review</span>. Cùng skill.</p>
+                    </div>
+
+                    <!-- Recipe 4: MCP User Scope -->
                     <div class="card" style="border-top: 4px solid var(--accent-warning);">
-                        <h4 style="color: var(--accent-warning);">Recipe 3 — MCP User Scope</h4>
+                        <h4 style="color: var(--accent-warning);">Recipe 4 — MCP User Scope</h4>
                         <p style="color: var(--text-muted); margin-bottom: 1rem;">MCP work cho mọi repo, không scope per-project</p>
 <pre><code># Sai (per-project):
 cd repos/return-home
@@ -1437,6 +1493,34 @@ claude mcp add --scope user ...
                         <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Sang repo khác → MCP missing → AI không gọi Jira/Confluence được.</p>
                         <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Dùng <span class="inline-code">--scope user</span> hoặc edit <span class="inline-code">~/.claude.json</span> top-level <span class="inline-code">mcpServers</span>.</p>
                     </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 7: <span class="inline-code">Reference:</span> text vs <span class="inline-code">@file</span> mention</h4>
+                        <p><strong>Tình huống:</strong> Command/skill có dòng <code style="font-size: 0.85em;">&gt; Reference: .kiro/steering/principles.md</code> tưởng AI auto-load.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> AI <strong>không thực sự đọc</strong> file đó — chỉ là DOC pointer cho human. Output review thiếu rule, sếp review catch lỗi mới.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Dùng cú pháp <span class="inline-code">@.kiro/steering/principles.md</span> ở đầu file để Claude Code <strong>thực sự inject</strong> content vào context.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 8: Slash command không cross-IDE</h4>
+                        <p><strong>Tình huống:</strong> Skill <span class="inline-code">feature-startup-protocol</span> viết "MANDATORY chạy <span class="inline-code">/nt-review</span>". Anh chạy ở Kiro/Cursor.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Kiro & Cursor KHÔNG có syntax <span class="inline-code">/command</span> — chỉ Claude Code có. AI ngó lơ Phase 6.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Tạo SKILL canonical (<span class="inline-code">.claude/skills/nt-review/SKILL.md</span>) + wrappers Kiro/Cursor. Slash command chỉ là quick-invoke wrapper. Reference từ skill khác dùng <span class="inline-code">@file</span> (universal) thay vì <span class="inline-code">/command</span> (Claude-only).</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 9: Override built-in command</h4>
+                        <p><strong>Tình huống:</strong> Tạo user-defined <span class="inline-code">/code-review</span> trùng tên built-in của Claude Code.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Confusion — list <span class="inline-code">/skills</span> hiện 2 entries cùng tên. User không biết cái nào sẽ chạy. Có thể override mất tính năng built-in (configurable effort, inline PR comment).</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Kiểm tra Claude Code built-in trước khi đặt tên (gõ <span class="inline-code">/</span> xem autocomplete). Custom command nên có prefix riêng (vd: <span class="inline-code">/nt-*</span>) tránh đè.</p>
+                    </div>
+
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger);">❌ Anti-Pattern 10: Principles generic, không đủ specific</h4>
+                        <p><strong>Tình huống:</strong> File <span class="inline-code">techlead-review-principles.md</span> chỉ có rule chung (CRITICAL/MAJOR/MINOR generic). Sếp catch lỗi <span class="inline-code">[Required] DateTime?</span> mà file principles không cover.</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;"><strong>Hậu quả:</strong> Self-review pass nhưng sếp vẫn FAIL — vì AI không có "knowledge base" specific để catch các pattern stack/cty.</p>
+                        <p style="color: var(--accent-success); margin-top: 1rem;"><strong>✓ Đúng:</strong> Mỗi lỗi sếp catch lần đầu → cập nhật principles ngay (vd: section <strong>DTO/Validation Patterns V1-V6</strong>). Lâu dài principles trở thành sentinel chống sếp catch lại.</p>
+                    </div>
                 </div>
 
                 <!-- Quick reference card -->
@@ -1457,7 +1541,7 @@ claude mcp add --scope user ...
                                     <td>Bắt đầu task lẻ</td>
                                     <td><span class="inline-code">feature-startup-protocol</span> skill</td>
                                     <td>Keyword "bắt đầu task" / <span class="inline-code">#feature-startup-protocol</span></td>
-                                    <td>5-phase plan + STOP confirm</td>
+                                    <td>6 phase: context → deps → Karpathy + <strong style="color: var(--accent-secondary);">plan.md</strong> → dev review file → implement → self-review</td>
                                 </tr>
                                 <tr>
                                     <td>Bắt đầu epic</td>
@@ -1472,22 +1556,40 @@ claude mcp add --scope user ...
                                     <td>Think before code, surgical, success criteria</td>
                                 </tr>
                                 <tr>
+                                    <td><strong style="color: var(--accent-success);">Self-review NT code</strong> (post-implement)</td>
+                                    <td><span class="inline-code">nt-review</span> skill <br>(+ <span class="inline-code">/nt-review</span> Claude Code quick-invoke)</td>
+                                    <td>Auto Phase 6 trong feature/epic-startup. Hoặc <span class="inline-code">#nt-review</span> (Kiro) / <span class="inline-code">@nt-review</span> (Cursor)</td>
+                                    <td>Apply principles + V1-V6 DTO patterns → file <span class="inline-code">docs/reviews/&lt;branch&gt;_review_&lt;time&gt;.md</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong style="color: var(--accent-success);">Apply fix từ review report</strong></td>
+                                    <td><span class="inline-code">nt-fix-review</span> skill <br>(+ <span class="inline-code">/nt-fix-review</span>)</td>
+                                    <td>Auto khi nt-review FAIL. Hoặc <span class="inline-code">#nt-fix-review</span> / <span class="inline-code">@nt-fix-review</span></td>
+                                    <td>Auto-fix MAJOR (trừ M1, M12.4-5). Verify build/test</td>
+                                </tr>
+                                <tr>
                                     <td>Sau khi push</td>
                                     <td><span class="inline-code">/gen-mr-summary</span> command</td>
                                     <td>User gõ <span class="inline-code">/gen-mr-summary</span> hoặc auto reminder hook</td>
-                                    <td>6-line FRT format</td>
+                                    <td>6-line FRT format (target=ci, verb đầu)</td>
                                 </tr>
                                 <tr>
-                                    <td>Self-review pushed code</td>
-                                    <td><span class="inline-code">/review-branch</span> command</td>
-                                    <td>User gõ <span class="inline-code">/review-branch</span></td>
-                                    <td>Predict TechLead verdict (PASS/FAIL)</td>
+                                    <td>Review code <strong>generic / external</strong></td>
+                                    <td><span class="inline-code">/code-review</span> <strong>(BUILT-IN)</strong></td>
+                                    <td>Anthropic ship sẵn — gõ trực tiếp</td>
+                                    <td>Configurable effort low/medium/high/max + inline PR comment</td>
                                 </tr>
                                 <tr>
-                                    <td>Self-review unpushed code</td>
-                                    <td><span class="inline-code">/review-fix</span> command</td>
-                                    <td>User gõ <span class="inline-code">/review-fix</span></td>
-                                    <td>Find + auto-fix CRITICAL/MAJOR</td>
+                                    <td>Security audit pending changes</td>
+                                    <td><span class="inline-code">/security-review</span> <strong>(BUILT-IN)</strong></td>
+                                    <td>Anthropic ship sẵn</td>
+                                    <td>OWASP-style audit code đang sửa</td>
+                                </tr>
+                                <tr>
+                                    <td>Deep review (paid)</td>
+                                    <td><span class="inline-code">/ultrareview</span> <strong>(BUILT-IN, web)</strong></td>
+                                    <td>Anthropic — chạy trên Claude Code Web</td>
+                                    <td>~5-10 min · $5-25 USD · multi-model verify, catch lỗi sâu</td>
                                 </tr>
                                 <tr>
                                     <td>Sync MCP Kiro → Claude Code</td>
@@ -1518,7 +1620,7 @@ claude mcp add --scope user ...
     </section>
 
     <script>
-        // Intersection Observer for scroll animations
+        // Intersection Observer for scroll animations + safety fallback
         document.addEventListener('DOMContentLoaded', () => {
             const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
             const observer = new IntersectionObserver((entries) => {
@@ -1528,7 +1630,25 @@ claude mcp add --scope user ...
                     }
                 });
             }, observerOptions);
-            document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+            const elements = document.querySelectorAll('.animate-on-scroll');
+            elements.forEach(el => observer.observe(el));
+
+            // Fallback: force visible nếu element đã trong viewport ngay khi load
+            // (xử lý case URL có #fragment jump trực tiếp tới section)
+            setTimeout(() => {
+                elements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const inView = rect.top < window.innerHeight && rect.bottom > 0;
+                    if (inView) el.classList.add('visible');
+                });
+            }, 100);
+
+            // Last-resort safety: nếu sau 2s vẫn invisible, force show all
+            setTimeout(() => {
+                document.querySelectorAll('.animate-on-scroll:not(.visible)').forEach(el => {
+                    el.classList.add('visible');
+                });
+            }, 2000);
         });
     </script>
 </body>
