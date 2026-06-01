@@ -390,6 +390,7 @@
                     <li><a href="#9router">9Router</a></li>
                     <li><a href="#combo">Combo</a></li>
                     <li><a href="#tunnel">Tunnel</a></li>
+                    <li><a href="#tool-config">Config</a></li>
                     <li><a href="#lessons">Bài học</a></li>
                     <li class="nav-dropdown">
                         <div class="nav-dropdown-btn">📚 Pages ▾</div>
@@ -826,22 +827,115 @@ ngrok http 20128
                             <td><span class="badge badge-ok">DONE</span></td>
                         </tr>
                         <tr>
-                            <td>Hermes Agent</td>
-                            <td><span class="inline-code">http://localhost:20128/v1</span></td>
-                            <td>❌ Không cần (chạy local)</td>
-                            <td><span class="badge badge-warn">TODO</span></td>
-                        </tr>
-                        <tr>
                             <td>Claude Code</td>
                             <td><span class="inline-code">http://localhost:20128/v1</span></td>
                             <td>❌ Không cần (chạy local)</td>
-                            <td><span class="badge badge-warn">TODO</span></td>
+                            <td><span class="badge badge-ok">DONE</span></td>
+                        </tr>
+                        <tr>
+                            <td>Hermes Agent</td>
+                            <td><span class="inline-code">http://localhost:20128/v1</span></td>
+                            <td>❌ Không cần (chạy local)</td>
+                            <td><span class="badge badge-ok">DONE</span></td>
                         </tr>
                         <tr>
                             <td>Kiro</td>
-                            <td><span class="inline-code">http://localhost:20128/v1</span></td>
-                            <td>❌ Không cần (chạy local)</td>
-                            <td><span class="badge badge-warn">TODO</span></td>
+                            <td>N/A</td>
+                            <td>N/A</td>
+                            <td><span class="badge badge-fail">Không hỗ trợ</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLAUDE CODE + HERMES CONFIG -->
+    <section id="tool-config">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="card-title">Concept 5</p>
+                <h2>⚙️ Config từng tool → 9Router</h2>
+                <p style="color: var(--text-muted);">Chi tiết setup Claude Code và Hermes — đã verified hoạt động</p>
+            </div>
+
+            <div class="grid-2 animate-on-scroll">
+                <div class="card">
+                    <div class="concept-header">
+                        <span style="font-size:2rem;">🤖</span>
+                        <h3>Claude Code</h3>
+                    </div>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Dùng <span class="inline-code">ANTHROPIC_BASE_URL</span> để redirect toàn bộ API call qua 9Router. Claude Code tôn trọng env var này.</p>
+                    <pre><code># ~/.zshrc
+export ANTHROPIC_BASE_URL="http://localhost:20128/v1"
+export ANTHROPIC_API_KEY="&lt;9router-key&gt;"
+
+# ~/.claude/settings.json
+{
+  "model": "Clade_Cursor_Kiro_Hermes"
+}</code></pre>
+                    <div class="lesson-box" style="margin-top: 1rem;">
+                        <h4>⚠️ Lưu ý</h4>
+                        <p>9Router hỗ trợ cả Anthropic format (<span class="inline-code">/v1/messages</span>) với <span class="inline-code">Authorization: Bearer &lt;key&gt;</span> header. Verify: <span class="inline-code">curl localhost:20128/v1/messages -H "Authorization: Bearer &lt;key&gt;"</span></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="concept-header">
+                        <span style="font-size:2rem;">🦾</span>
+                        <h3>Hermes Agent</h3>
+                    </div>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Hermes dùng <span class="inline-code">~/.hermes/config.yaml</span>. Phải chọn provider <span class="inline-code">openai-api</span> (không phải <span class="inline-code">openrouter</span>) vì OpenRouter hardcode endpoint của họ.</p>
+                    <pre><code># ~/.hermes/config.yaml
+model:
+  provider: openai-api
+  base_url: http://localhost:20128/v1
+  default: Clade_Cursor_Kiro_Hermes
+  api_mode: chat_completions
+
+auxiliary:
+  title_generation:
+    provider: openai-api
+    base_url: http://localhost:20128/v1
+    api_key: &lt;9router-key&gt;
+    model: Clade_Cursor_Kiro_Hermes
+
+# ~/.zshrc
+export OPENAI_API_KEY="&lt;9router-key&gt;"</code></pre>
+                    <div class="lesson-box" style="margin-top: 1rem;">
+                        <h4>💡 Dùng hermes model để config</h4>
+                        <p>Chạy <span class="inline-code">hermes model</span> → chọn <strong>OpenAI API</strong> → nhập base URL <span class="inline-code">http://localhost:20128/v1</span> → nhập model <span class="inline-code">Clade_Cursor_Kiro_Hermes</span>. Nhanh hơn edit YAML thủ công.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-wrapper animate-on-scroll" style="margin-top: 2rem;">
+                <table>
+                    <thead>
+                        <tr><th>Tool</th><th>Cơ chế</th><th>Env var</th><th>Provider trong config</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Cursor</td>
+                            <td>Override OpenAI Base URL + ngrok tunnel</td>
+                            <td>N/A (UI settings)</td>
+                            <td>OpenAI-compatible</td>
+                        </tr>
+                        <tr>
+                            <td>Claude Code</td>
+                            <td><span class="inline-code">ANTHROPIC_BASE_URL</span></td>
+                            <td><span class="inline-code">ANTHROPIC_API_KEY</span></td>
+                            <td>Anthropic format</td>
+                        </tr>
+                        <tr>
+                            <td>Hermes</td>
+                            <td><span class="inline-code">config.yaml base_url</span></td>
+                            <td><span class="inline-code">OPENAI_API_KEY</span></td>
+                            <td><span class="inline-code">openai-api</span></td>
+                        </tr>
+                        <tr>
+                            <td>Kiro</td>
+                            <td colspan="3" style="color: var(--accent-danger);">❌ Không support custom endpoint — hardcoded AWS infrastructure</td>
                         </tr>
                     </tbody>
                 </table>
@@ -852,8 +946,8 @@ ngrok http 20128
     <!-- CTA -->
     <section class="cta-section">
         <div class="container animate-on-scroll">
-            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Setup tiếp theo</h2>
-            <p style="color: var(--text-muted); font-size: 1.2rem; margin-bottom: 2rem;">Point Claude Code và Kiro vào 9Router local (không cần tunnel)</p>
+            <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">🎉 Setup hoàn chỉnh!</h2>
+            <p style="color: var(--text-muted); font-size: 1.2rem; margin-bottom: 2rem;">Cursor · Claude Code · Hermes đều route qua 9Router — monitor token usage tập trung tại <span style="color: var(--accent-9router);">localhost:20128/dashboard</span></p>
             <a href="index.html" class="btn">← Quay lại trang chính</a>
         </div>
     </section>
