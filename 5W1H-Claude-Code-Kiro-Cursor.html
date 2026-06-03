@@ -2285,7 +2285,14 @@ ngrok http 20128
 
 # 3. Model: Clade_Cursor_Kiro_Hermes</code></pre>
                         <div style="margin-top: 1rem; padding: 0.6rem 0.75rem; background: rgba(239,68,68,0.08); border-radius: 6px; border-left: 3px solid var(--accent-danger);">
-                            <p style="color: var(--accent-danger); font-size: 0.83rem; font-weight: 600;">⚠️ ngrok free URL đổi mỗi lần restart → phải update Cursor mỗi lần start lại ngrok</p>
+                            <p style="color: var(--accent-warning); font-size: 0.83rem; font-weight: 600;">✅ Script <span class="inline-code">ngrok-cursor</span> tự update Cursor DB — không cần vào Settings nữa</p>
+                        <div style="margin-top:0.75rem; padding:0.6rem 0.75rem; background:rgba(239,68,68,0.08); border-radius:6px; border-left:3px solid var(--accent-danger);">
+                            <p style="color:var(--accent-danger); font-size:0.82rem; font-weight:700; margin-bottom:0.3rem;">⚠️ Thứ tự BẮT BUỘC (sai thứ tự Cursor sẽ overwrite DB):</p>
+                            <pre style="margin:0; font-size:0.8rem;"><code>1. Cmd+Q  # Quit Cursor hoàn toàn
+2. ngrok-cursor  # Update DB xong
+3. open -a Cursor  # Mở lại</code></pre>
+                            <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.4rem;">Reload Window không đủ — Cursor ghi memory → DB khi reload, overwrite mất thay đổi.</p>
+                        </div>
                         </div>
                     </div>
 
