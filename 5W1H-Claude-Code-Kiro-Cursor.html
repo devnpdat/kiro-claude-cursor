@@ -263,6 +263,7 @@
                     <li><a href="#workspace-tree">Cây workspace</a></li>
                     <li><a href="#combination">Quy trình</a></li>
                     <li><a href="#frt-toolkit">FRT Toolkit</a></li>
+                    <li><a href="#execute-flow">Execute Flow</a></li>
                     <li><a href="#hermes-9router">Hermes & 9Router</a></li>
                     <li><a href="#cookbook">Cookbook</a></li>
                     <li><a href="#summary">Đối chiếu</a></li>
@@ -1698,6 +1699,362 @@ claude mcp add --scope user ...
             </div>
         </div>
     </section>
+
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <!--  EXECUTE FLOW & SUB-AGENT STRATEGY                       -->
+    <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+    <section id="execute-flow">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>⚡ Execute Flow & Sub-Agent Strategy</h2>
+                <p>Quy trình AI-Native SDLC của FRT — 5 agent tự động hóa từ Planning đến Ship. Kết hợp Sub-Agent Strategy để xử lý task phức tạp song song.</p>
+            </div>
+
+            <!-- ━━━ 1. execute_flow 5W1H ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <div class="concept-header">
+                    <h3>1. execute_flow — 5W1H</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w">
+                        <div class="box-label">WHAT <span>Cái gì?</span></div>
+                        MCP tool gọi AI Agent pipeline của FRT. Mỗi <span class="inline-code">flow</span> tương ứng 1 giai đoạn SDLC — từ Planning → Shaping → Build → Verify → Ship.
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHY <span>Tại sao?</span></div>
+                        Chuẩn hóa luồng làm việc toàn team. AI không chỉ "code theo yêu cầu" mà hiểu đúng context từ Jira + Confluence + steering rules trước khi hành động.
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHO <span>Ai dùng?</span></div>
+                        <strong>Dev</strong> → <span class="inline-code">b5_build</span> &nbsp;|&nbsp; <strong>BA</strong> → <span class="inline-code">b3_shape</span> &nbsp;|&nbsp; <strong>TechLead/DM</strong> → <span class="inline-code">b0_planning</span> &nbsp;|&nbsp; <strong>QA/TL</strong> → <span class="inline-code">b6_verify</span> &nbsp;|&nbsp; <strong>DevOps</strong> → <span class="inline-code">b7_ship</span>
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHEN <span>Khi nào?</span></div>
+                        <strong>MANDATORY</strong> khi bắt đầu mọi task mới. Không được fallback sang <span class="inline-code">jira_get_issue</span> tự ý — nếu lỗi phải STOP và báo user.
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHERE <span>Ở đâu?</span></div>
+                        Gọi qua MCP <span class="inline-code">ai-context-engine-company</span> (endpoint <span class="inline-code">https://ai-dlc.frt.vn/mcp</span>). Tracked trên RAI Portal.
+                    </div>
+                    <div class="box-5w how">
+                        <div class="box-label">HOW <span>Như thế nào?</span></div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div>
+                                <p style="color:var(--accent-secondary); font-weight:700; margin-bottom:0.5rem;">Syntax cơ bản:</p>
+                                <pre style="margin:0;"><code>execute_flow(
+  flow="b5_build",
+  issue_key="NTSALES-659",
+  chain_id="PHARMACY"
+)</code></pre>
+                            </div>
+                            <div>
+                                <p style="color:var(--accent-warning); font-weight:700; margin-bottom:0.5rem;">Nếu lỗi — STOP, không fallback:</p>
+                                <pre style="margin:0;"><code>⚠️ execute_flow failed: &lt;error&gt;
+
+(1) Retry với params khác?
+(2) Fix token/MCP rồi retry?
+(3) Override explicit (debug only)</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ 2. 5 Agent Pipeline ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">2. 5 Agent Pipeline — B0 → B7</h3>
+                <p style="color: var(--text-muted); margin-bottom: 2rem;">Mỗi flow tương ứng 1 agent chuyên biệt. Kết quả agent trước là input cho agent sau.</p>
+
+                <!-- Pipeline flow -->
+                <div style="display: flex; align-items: stretch; gap: 0; margin-bottom: 2rem; overflow-x: auto; padding-bottom: 1rem;">
+                    <!-- B0 -->
+                    <div style="flex: 1; min-width: 150px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.3); border-radius: 12px 0 0 12px; padding: 1.25rem; text-align: center;">
+                        <p style="font-size: 0.7rem; color: #818cf8; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">B0_Agent</p>
+                        <p style="font-weight: 800; font-size: 1rem; color: white; margin-bottom: 0.4rem;">Planning</p>
+                        <p class="inline-code" style="font-size: 0.75rem;">b0_planning</p>
+                        <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.75rem;">Sprint plan · Backlog priority · Dependence</p>
+                        <p style="color: #818cf8; font-size: 0.75rem; margin-top: 0.5rem; font-weight: 600;">TechLead / DM</p>
+                    </div>
+                    <div style="display:flex; align-items:center; color: rgba(99,102,241,0.5); font-size: 1.5rem; padding: 0 2px;">→</div>
+                    <!-- B3 -->
+                    <div style="flex: 1; min-width: 150px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.3); border-top: none; border-bottom: none; padding: 1.25rem; text-align: center;">
+                        <p style="font-size: 0.7rem; color: var(--accent-success); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">B3_Agent</p>
+                        <p style="font-weight: 800; font-size: 1rem; color: white; margin-bottom: 0.4rem;">Shaping</p>
+                        <p class="inline-code" style="font-size: 0.75rem;">b3_shape</p>
+                        <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.75rem;">Requirement · Design · Review doc (điểm 7-9/10)</p>
+                        <p style="color: var(--accent-success); font-size: 0.75rem; margin-top: 0.5rem; font-weight: 600;">BA</p>
+                    </div>
+                    <div style="display:flex; align-items:center; color: rgba(16,185,129,0.5); font-size: 1.5rem; padding: 0 2px;">→</div>
+                    <!-- B5 -->
+                    <div style="flex: 1; min-width: 150px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); padding: 1.25rem; text-align: center; position: relative;">
+                        <div style="position:absolute; top:-10px; left:50%; transform:translateX(-50%); background: var(--accent-warning); color: black; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 10px;">DEV ENTRY</div>
+                        <p style="font-size: 0.7rem; color: var(--accent-warning); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">B5_Agent</p>
+                        <p style="font-weight: 800; font-size: 1rem; color: white; margin-bottom: 0.4rem;">Build</p>
+                        <p class="inline-code" style="font-size: 0.75rem;">b5_build</p>
+                        <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.75rem;">BA duyệt doc → Agent code → Dev review → Complete</p>
+                        <p style="color: var(--accent-warning); font-size: 0.75rem; margin-top: 0.5rem; font-weight: 600;">Dev</p>
+                    </div>
+                    <div style="display:flex; align-items:center; color: rgba(245,158,11,0.5); font-size: 1.5rem; padding: 0 2px;">→</div>
+                    <!-- B6 -->
+                    <div style="flex: 1; min-width: 150px; background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.3); border-top: none; border-bottom: none; padding: 1.25rem; text-align: center;">
+                        <p style="font-size: 0.7rem; color: var(--accent-primary); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">b6_verify</p>
+                        <p style="font-weight: 800; font-size: 1rem; color: white; margin-bottom: 0.4rem;">Verify</p>
+                        <p class="inline-code" style="font-size: 0.75rem;">b6_verify</p>
+                        <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.75rem;">Chạy test · TechLead review code</p>
+                        <p style="color: var(--accent-primary); font-size: 0.75rem; margin-top: 0.5rem; font-weight: 600;">QA / TechLead</p>
+                    </div>
+                    <div style="display:flex; align-items:center; color: rgba(139,92,246,0.5); font-size: 1.5rem; padding: 0 2px;">→</div>
+                    <!-- B7 -->
+                    <div style="flex: 1; min-width: 150px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 0 12px 12px 0; padding: 1.25rem; text-align: center;">
+                        <p style="font-size: 0.7rem; color: var(--accent-danger); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">b7_ship</p>
+                        <p style="font-weight: 800; font-size: 1rem; color: white; margin-bottom: 0.4rem;">Ship</p>
+                        <p class="inline-code" style="font-size: 0.75rem;">b7_ship</p>
+                        <p style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.75rem;">Deploy → Release → Done</p>
+                        <p style="color: var(--accent-danger); font-size: 0.75rem; margin-top: 0.5rem; font-weight: 600;">DevOps / TechLead</p>
+                    </div>
+                </div>
+
+                <!-- Role × Flow matrix -->
+                <div class="card" style="margin-bottom: 2rem;">
+                    <h4 style="margin-bottom: 1rem;">👥 Role → Flow mapping</h4>
+                    <div class="table-wrapper" style="margin-top: 0;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Role</th>
+                                    <th>Flow gọi</th>
+                                    <th>Khi nào</th>
+                                    <th>Output</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>TechLead / DM</strong></td>
+                                    <td><span class="inline-code">b0_planning</span></td>
+                                    <td>Đầu sprint, cần phân loại & priority backlog</td>
+                                    <td>Sprint plan, dependency map, estimate</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>BA</strong></td>
+                                    <td><span class="inline-code">b3_shape</span></td>
+                                    <td>Ticket mới được assign → phân tích yêu cầu</td>
+                                    <td>Requirement doc, Design doc, Review doc (7-9/10)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong style="color:var(--accent-warning);">Dev ← anh đang đây</strong></td>
+                                    <td><span class="inline-code" style="color:var(--accent-warning);">b5_build</span></td>
+                                    <td>BA duyệt doc xong → bắt đầu code. <strong style="color:var(--accent-danger);">MANDATORY mọi task</strong></td>
+                                    <td>Code complete, self-review passed</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>QA / TechLead</strong></td>
+                                    <td><span class="inline-code">b6_verify</span></td>
+                                    <td>Sau code complete, MR tạo</td>
+                                    <td>Test report, review comments, approve/reject</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>DevOps / TechLead</strong></td>
+                                    <td><span class="inline-code">b7_ship</span></td>
+                                    <td>Sau verify OK</td>
+                                    <td>Deploy ci → release, Done ticket</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Rework flow -->
+                <div class="card" style="background: rgba(245,158,11,0.05); border-color: rgba(245,158,11,0.3);">
+                    <h4 style="color: var(--accent-warning);">🔄 Rework Flow — Requirement/Solution đổi sau khi CI đã build</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                        <div>
+                            <p style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem;">Scenario thường gặp:</p>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <div style="padding: 0.6rem 0.75rem; background: rgba(239,68,68,0.08); border-radius: 6px; border-left: 3px solid var(--accent-danger); font-size: 0.85rem;">
+                                    CI đã merge → requirement đổi → <strong style="color:var(--accent-warning);">gọi lại b3_shape</strong> trên ticket cũ → BA duyệt doc mới
+                                </div>
+                                <div style="padding: 0.6rem 0.75rem; background: rgba(239,68,68,0.08); border-radius: 6px; border-left: 3px solid var(--accent-danger); font-size: 0.85rem;">
+                                    TechLead reject MR → <strong style="color:var(--accent-warning);">loop lại b5_build</strong> → fix code → re-verify
+                                </div>
+                                <div style="padding: 0.6rem 0.75rem; background: rgba(16,185,129,0.08); border-radius: 6px; border-left: 3px solid var(--accent-success); font-size: 0.85rem;">
+                                    BA reject doc (Duyệt Doc? = No) → <strong style="color:var(--accent-success);">b3_shape loop tự động</strong> — không tạo ticket mới
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <p style="font-weight: 700; color: var(--text-main); margin-bottom: 0.75rem;">Câu hỏi chưa có câu trả lời chuẩn:</p>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; color: var(--text-muted); font-size: 0.85rem;">
+                                <div style="padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                                    ❓ Gọi lại <span class="inline-code">b3_shape</span> trên ticket cũ có <strong>overwrite</strong> Confluence doc cũ không?
+                                </div>
+                                <div style="padding: 0.6rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                                    ❓ Sub-ticket/rework ticket có cần gọi <span class="inline-code">execute_flow</span> riêng không?
+                                </div>
+                                <div style="padding: 0.6rem 0.75rem; background: rgba(139,92,246,0.08); border-radius: 6px; border-left: 3px solid var(--accent-primary);">
+                                    💡 <strong>Hỏi presenter workshop</strong> — đây là gap thực tế chưa được document
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ 3. Sub-Agent Strategy 5W1H ━━━ -->
+            <div class="animate-on-scroll" style="margin-bottom: 5rem;">
+                <div class="concept-header">
+                    <h3>3. Sub-Agent Strategy — 5W1H</h3>
+                </div>
+                <div class="grid-5w1h">
+                    <div class="box-5w">
+                        <div class="box-label">WHAT <span>Cái gì?</span></div>
+                        Rule hướng dẫn AI tự động chia task phức tạp thành nhiều sub-agent chạy <strong>song song</strong> — như giao việc cho nhiều dev cùng lúc thay vì 1 dev làm hết tuần tự.
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHY <span>Tại sao?</span></div>
+                        Task 5 file mất ~5 phút tuần tự → còn ~2 phút song song. Ít conflict hơn vì mỗi sub-agent chỉ sửa file được giao. Luôn có verification step cuối.
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHO <span>Ai dùng?</span></div>
+                        Mọi người — rule tự động apply, không cần prompt đặc biệt. Override bằng <span class="inline-code">"do it yourself"</span> hoặc <span class="inline-code">"không cần chia sub-agent"</span>.
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHEN <span>Khi nào?</span></div>
+                        <strong style="color:var(--accent-success);">Spawn:</strong> 2+ file độc lập · code+test+docs · refactor+spec<br>
+                        <strong style="color:var(--accent-danger);">Không spawn:</strong> 1 file &lt;50 LoC · sequential deps · conversational answer
+                    </div>
+                    <div class="box-5w">
+                        <div class="box-label">WHERE <span>Ở đâu?</span></div>
+                        Config file theo IDE:<br>
+                        Kiro: <span class="inline-code">.kiro/steering/sub-agent-strategy.md</span><br>
+                        Claude Code: <span class="inline-code">.claude/skills/sub-agent-strategy/</span><br>
+                        Cursor: <span class="inline-code">.cursor/rules/sub-agent-strategy.mdc</span><br>
+                        Hermes: built-in <span class="inline-code">subagent-driven-development</span>
+                    </div>
+                    <div class="box-5w how">
+                        <div class="box-label">HOW <span>Như thế nào?</span></div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div>
+                                <p style="color: var(--accent-success); font-weight: 700; margin-bottom: 0.5rem;">✅ Prompt thường — agent tự chia:</p>
+                                <pre style="margin:0; font-size:0.82rem;"><code>"Refactor module Payment:
+sửa service, update test,
+cập nhật README"
+→ Agent tự chia 3 track song song</code></pre>
+                            </div>
+                            <div>
+                                <p style="color: var(--accent-warning); font-weight: 700; margin-bottom: 0.5rem;">⛓️ DAG pattern (fan-out + fan-in):</p>
+                                <pre style="margin:0; font-size:0.82rem;"><code>[code A] ─┐
+[code B] ─┤→ [verify all]
+[docs C] ─┘
+depends_on: ["A","B","C"]</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trigger table -->
+                <div class="card">
+                    <h4 style="margin-bottom: 1rem;">🎯 Khi nào spawn / không spawn</h4>
+                    <div class="table-wrapper" style="margin-top: 0;">
+                        <table>
+                            <thead>
+                                <tr><th>Tình huống</th><th>Agent làm gì</th><th>Pattern</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Sửa 2+ file không liên quan</td>
+                                    <td><span style="color:var(--accent-success);">Chia song song</span></td>
+                                    <td>Pure parallel</td>
+                                </tr>
+                                <tr>
+                                    <td>Code + docs + test cùng lúc</td>
+                                    <td><span style="color:var(--accent-success);">3 track song song → verify</span></td>
+                                    <td>Fan-out + fan-in</td>
+                                </tr>
+                                <tr>
+                                    <td>Refactor module + update spec</td>
+                                    <td><span style="color:var(--accent-success);">2 track song song</span></td>
+                                    <td>Pure parallel</td>
+                                </tr>
+                                <tr>
+                                    <td>Sửa 1 file nhỏ (&lt;50 dòng)</td>
+                                    <td><span style="color:var(--text-muted);">Làm trực tiếp, không chia</span></td>
+                                    <td>Serial</td>
+                                </tr>
+                                <tr>
+                                    <td>Đọc → phân tích → quyết định</td>
+                                    <td><span style="color:var(--text-muted);">Tuần tự (sequential deps)</span></td>
+                                    <td>Serial</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(139,92,246,0.08); border-radius: 8px;">
+                        <p style="color: var(--accent-primary); font-size: 0.88rem; margin: 0;">⚠️ <strong>Edge case chưa có câu trả lời:</strong> Khi sub-agent chạy song song mà cùng gọi <span class="inline-code">execute_flow</span> cho cùng 1 ticket → có conflict state trên RAI Portal không? → Hỏi presenter workshop.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ━━━ 4. Cấu hình cross-IDE ━━━ -->
+            <div class="animate-on-scroll">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem;">4. Setup Sub-Agent Strategy Cross-IDE</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem;">
+                    <div class="card" style="border-top: 4px solid var(--accent-warning);">
+                        <h4 style="color: var(--accent-warning);">Kiro</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.75rem 0;">Steering với <span class="inline-code">inclusion: always</span> → trỏ canonical</p>
+                        <pre><code>.kiro/steering/
+  sub-agent-strategy.md
+  ---
+  inclusion: always
+  ---
+  #[[file:../../.claude/skills/
+  sub-agent-strategy/SKILL.md]]</code></pre>
+                        <p style="color: var(--accent-success); font-size: 0.85rem; margin-top: 0.75rem; font-weight: 600;">✅ Auto-load mọi session</p>
+                    </div>
+                    <div class="card" style="border-top: 4px solid var(--accent-secondary);">
+                        <h4 style="color: var(--accent-secondary);">Claude Code</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.75rem 0;">Canonical SKILL.md với frontmatter trigger</p>
+                        <pre><code>.claude/skills/
+  sub-agent-strategy/
+    SKILL.md
+    ---
+    name: sub-agent-strategy
+    description: |
+      Auto-apply khi task 2+
+      independent units of work
+    ---</code></pre>
+                        <p style="color: var(--accent-success); font-size: 0.85rem; margin-top: 0.75rem; font-weight: 600;">✅ Trigger theo description match</p>
+                    </div>
+                    <div class="card" style="border-top: 4px solid var(--accent-cursor);">
+                        <h4 style="color: var(--accent-cursor);">Cursor</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.75rem 0;">Rule với <span class="inline-code">alwaysApply: true</span></p>
+                        <pre><code>.cursor/rules/
+  sub-agent-strategy.mdc
+  ---
+  description: Auto-apply when
+    task has 2+ independent units
+  alwaysApply: true
+  ---
+  @.claude/skills/
+  sub-agent-strategy/SKILL.md</code></pre>
+                        <p style="color: var(--accent-success); font-size: 0.85rem; margin-top: 0.75rem; font-weight: 600;">✅ Always active</p>
+                    </div>
+                    <div class="card" style="border-top: 4px solid var(--accent-primary);">
+                        <h4 style="color: var(--accent-primary);">Hermes</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.75rem 0;">Built-in skill — không cần cài thêm</p>
+                        <pre><code># Kiểm tra:
+hermes skills list | grep subagent
+# → subagent-driven-development
+#   local | enabled ✅
+
+# Nếu muốn disable:
+hermes skills config</code></pre>
+                        <p style="color: var(--accent-success); font-size: 0.85rem; margin-top: 0.75rem; font-weight: 600;">✅ Built-in, enabled by default</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
 
     <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
     <!--  HERMES AGENT & 9ROUTER                                  -->
