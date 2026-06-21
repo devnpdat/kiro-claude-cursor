@@ -1,10 +1,10 @@
-# Hướng dẫn Setup Hermes Agent + 9Router (macOS)
+# Setup Guide: Hermes Agent + 9Router (macOS)
 
 > Step-by-step từ đầu. Verified trên macOS với Node v20+, Python 3.10+.
 
 ---
 
-## Tại sao nên cài?
+## Why Install This?
 
 ### 9Router — Local AI Proxy
 
@@ -27,7 +27,7 @@ Thực tế: combo Claude Code + Cursor + Kiro OAuth giảm đáng kể chi phí
 
 ---
 
-### Hermes Agent — AI Agent trong terminal
+### Hermes Agent — AI Agent in the Terminal
 
 So sánh với các tool khác:
 
@@ -57,7 +57,7 @@ Combo Hermes + 9Router: Hermes có AI mạnh (qua 9Router routing đến model t
 
 ---
 
-## Tổng quan kiến trúc
+## Architecture Overview
 
 ```
 Claude Code ──┐
@@ -71,9 +71,9 @@ Hermes ───────┘    dashboard/monitor            ► Kiro OAuth
 
 ---
 
-## PHẦN 0 — Prerequisites
+## PART 0 — Prerequisites
 
-### Homebrew (package manager cho macOS)
+### Homebrew (package manager for macOS)
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -84,7 +84,7 @@ Verify:
 brew --version  # Homebrew 4.x
 ```
 
-### Node.js (cần cho 9Router)
+### Node.js (required for 9Router)
 
 Yêu cầu: Node v20 trở lên.
 
@@ -103,7 +103,7 @@ Nếu đã có Node cũ hơn v20, nâng lên:
 brew upgrade node
 ```
 
-### Python (cần cho Hermes)
+### Python (required for Hermes)
 
 Yêu cầu: Python 3.10 trở lên.
 
@@ -120,9 +120,9 @@ python3 --version  # Python 3.10.x hoặc cao hơn
 
 ---
 
-## PHẦN 1 — Cài 9Router
+## PART 1 — Install 9Router
 
-### Bước 1: Cài qua npm
+### Step 1: Install via npm
 
 ```bash
 npm install -g 9router
@@ -134,7 +134,7 @@ Verify:
 which 9router  # /opt/homebrew/bin/9router
 ```
 
-### Bước 2: Chạy lần đầu để init config
+### Step 2: First run to initialize config
 
 ```bash
 9router
@@ -142,7 +142,7 @@ which 9router  # /opt/homebrew/bin/9router
 
 Mở browser vào `http://localhost:20128/dashboard` để vào UI.
 
-### Bước 3: Setup providers trong dashboard
+### Step 3: Setup providers in the dashboard
 
 Vào **Settings → Providers**, thêm lần lượt:
 
@@ -155,7 +155,7 @@ Vào **Settings → Providers**, thêm lần lượt:
 
 Với OAuth providers: click **Connect** → browser mở → đăng nhập → authorize.
 
-### Bước 4: Tạo Combo model
+### Step 4: Create a Combo model
 
 Vào **Models → New Model**:
 
@@ -165,13 +165,13 @@ Vào **Models → New Model**:
 
 Lưu lại.
 
-### Bước 5: Tạo API Key (bắt buộc nếu dùng Tunnel)
+### Step 5: Create an API Key (required if using Tunnel)
 
 Vào **Settings → API Keys → Generate**.
 Lưu key lại ngay — không xem lại được sau khi đóng dialog.
 Format: `9r-xxxxxxxxxxxx`
 
-### Bước 6: Auto-start 9Router khi boot (launchd)
+### Step 6: Auto-start 9Router on boot (launchd)
 
 Kiểm tra đường dẫn node trước:
 ```bash
@@ -221,9 +221,9 @@ curl http://localhost:20128/v1/models
 
 ---
 
-## PHẦN 2 — Cài Hermes Agent
+## PART 2 — Install Hermes Agent
 
-### Bước 1: Cài Hermes
+### Step 1: Install Hermes
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
@@ -234,7 +234,7 @@ Sau khi cài xong, mở terminal mới:
 hermes --version
 ```
 
-### Bước 2: Config Hermes trỏ vào 9Router
+### Step 2: Configure Hermes to point to 9Router
 
 Cách nhanh nhất dùng CLI:
 ```bash
@@ -263,7 +263,7 @@ Thêm API key vào .env:
 echo 'OPENAI_API_KEY=9r-xxxxxxxxxxxx' >> ~/.hermes/.env
 ```
 
-### Bước 3: Test Hermes
+### Step 3: Test Hermes
 
 ```bash
 hermes chat -q "hello, mày là ai?"
@@ -271,7 +271,7 @@ hermes chat -q "hello, mày là ai?"
 
 Nếu có response = OK.
 
-### Bước 4: Setup Telegram Bot (tuỳ chọn)
+### Step 4: Setup Telegram Bot (optional)
 
 1. Mở Telegram → tìm **@BotFather** → gõ `/newbot` → đặt tên → lấy token
 2. Tìm **@userinfobot** → gõ `/start` → lấy user ID của mình
@@ -289,7 +289,7 @@ TELEGRAM_ALLOWED_USERS=<user_id của mày>
 TELEGRAM_HOME_CHANNEL=<user_id của mày>
 ```
 
-### Bước 5: Auto-start Hermes Gateway khi boot
+### Step 5: Auto-start Hermes Gateway on boot
 
 ```bash
 hermes gateway install
@@ -304,7 +304,7 @@ hermes gateway status
 
 ---
 
-## PHẦN 3 — Config các AI tools khác trỏ vào 9Router
+## PART 3 — Configure Other AI Tools to Use 9Router
 
 ### Claude Code
 
@@ -329,7 +329,7 @@ API Key: `9r-xxxxxxxxxxxx`
 
 ---
 
-## PHẦN 4 — Token refresh khi OAuth hết hạn
+## PART 4 — Token Refresh When OAuth Expires
 
 9Router lưu OAuth token của các providers. Token có thời hạn (~30 ngày với Kiro/Claude Code).
 Khi token hết hạn:
@@ -339,7 +339,7 @@ Khi token hết hạn:
 
 ---
 
-## PHẦN 5 — Verify toàn bộ hoạt động
+## PART 5 — Verify Everything Works
 
 ```bash
 # 1. 9Router đang chạy
@@ -360,7 +360,7 @@ Dashboard monitor token usage: `http://localhost:20128/dashboard`
 
 ---
 
-## Troubleshooting thường gặp
+## Common Troubleshooting
 
 | Triệu chứng | Nguyên nhân | Fix |
 |-------------|-------------|-----|
@@ -375,7 +375,7 @@ Dashboard monitor token usage: `http://localhost:20128/dashboard`
 
 ---
 
-## Tóm tắt files quan trọng
+## Important Files Summary
 
 ```
 ~/.hermes/config.yaml                              # Hermes config chính
