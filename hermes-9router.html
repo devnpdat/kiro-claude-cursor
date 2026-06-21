@@ -338,49 +338,13 @@
 </head>
 <body>
 
-    <!-- Password Protection Overlay (outside blur wrapper) -->
-    <div id="auth-overlay" style="
-        position: fixed; inset: 0; z-index: 9999;
-        background: rgba(13,13,20,0.92);
-        backdrop-filter: blur(18px);
-        display: flex; align-items: center; justify-content: center;
-    ">
-        <div style="
-            background: #1a1a24; border: 1px solid rgba(249,115,22,0.3);
-            border-radius: 20px; padding: 3rem 2.5rem; text-align: center;
-            max-width: 380px; width: 90%; box-shadow: 0 0 60px rgba(249,115,22,0.15);
-        ">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
-            <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Tài liệu nội bộ</h2>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 2rem;">Nhập mật khẩu để xem nội dung</p>
-            <input id="pw-input" type="password" placeholder="Mật khẩu..." style="
-                width: 100%; padding: 0.9rem 1.2rem;
-                background: rgba(255,255,255,0.05);
-                border: 1px solid rgba(255,255,255,0.15);
-                border-radius: 10px; color: white; font-size: 1rem;
-                outline: none; margin-bottom: 1rem; font-family: inherit;
-            " onkeydown="if(event.key==='Enter') checkPw()">
-            <div id="pw-error" style="color: #ef4444; font-size: 0.85rem; min-height: 1.2rem; margin-bottom: 0.8rem;"></div>
-            <button onclick="checkPw()" style="
-                width: 100%; padding: 0.9rem;
-                background: linear-gradient(135deg, #f97316, #ec4899);
-                border: none; border-radius: 10px; color: white;
-                font-weight: 700; font-size: 1rem; cursor: pointer;
-                transition: opacity 0.2s;
-            " onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">
-                Xác nhận →
-            </button>
-        </div>
-    </div>
-
-    <!-- Page content wrapper — this gets blurred, overlay stays sharp -->
-    <div id="page-blur" style="filter: blur(8px); pointer-events: none; user-select: none;">
+    <div id="page-blur">
 
     <header>
         <div class="container">
             <nav>
                 <a href="index.html" class="logo">
-                    🤖 <span style="background: linear-gradient(135deg, var(--accent-hermes), var(--accent-9router)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">FRT AI Toolkit — 5W1H</span>
+                    🤖 <span style="background: linear-gradient(135deg, var(--accent-hermes), var(--accent-9router)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Toolkit — 5W1H</span>
                 </a>
                 <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
                     <span></span><span></span><span></span>
@@ -423,7 +387,7 @@
     <section id="hero">
         <div class="container animate-on-scroll">
             <h1>5W1H về<br><span class="gradient-text">Hermes Agent & 9Router Proxy</span></h1>
-            <p>Hiểu đúng 2 công cụ mới trong AI toolkit của FRT: Hermes làm gì, 9Router giải quyết bài toán gì, và cách setup combo fallback model thực tế.</p>
+            <p>Hiểu đúng 2 công cụ trong AI toolkit cá nhân: Hermes làm gì, 9Router giải quyết bài toán gì, và cách setup combo fallback model thực tế.</p>
 
             <div class="tags">
                 <span class="tag">Hermes Agent</span>
@@ -475,12 +439,12 @@
 
                 <div class="box-5w">
                     <div class="box-label"><span>WHEN</span><span>Khi nào dùng?</span></div>
-                    <p>• Quick query Jira từ điện thoại khi đang họp<br>• Chạy task AI khi không ngồi trước máy<br>• Monitor kết quả agent từ Telegram<br>• Dùng thay Claude.ai khi cần context FRT (Hermes đã có MCP FRT connected)</p>
+                    <p>• Quick query từ điện thoại khi đang họp<br>• Chạy task AI khi không ngồi trước máy<br>• Monitor kết quả agent từ Telegram<br>• Dùng thay Claude.ai khi cần context dự án (Hermes có thể kết nối MCP tools)</p>
                 </div>
 
                 <div class="box-5w">
                     <div class="box-label"><span>WHERE</span><span>Ở đâu?</span></div>
-                    <p>• Source: <span class="inline-code">~/.hermes/hermes-agent/</span><br>• Config: <span class="inline-code">~/.hermes/config.yaml</span><br>• Web UI: <span class="inline-code">localhost:9119</span><br>• Telegram: @AI_Hermes_Datnp_bot<br>• Gateway: launchd plist (auto-start khi boot)</p>
+                    <p>• Source: <span class="inline-code">~/.hermes/hermes-agent/</span><br>• Config: <span class="inline-code">~/.hermes/config.yaml</span><br>• Web UI: <span class="inline-code">localhost:9119</span><br>• Telegram: bot gateway (tuỳ chọn)<br>• Gateway: launchd plist (auto-start khi boot)</p>
                 </div>
 
                 <div class="box-5w how">
@@ -507,19 +471,19 @@
                     <div style="margin-top: 1.5rem;">
                         <h4 style="color: var(--accent-secondary); margin-bottom: 0.8rem;">Setup và cấu hình</h4>
                         <pre><code># Model đang dùng
-moonshotai/kimi-k2.6 via OpenRouter
+Combo-Company via 9Router
 
-# MCP connected
-- ai-context-engine-company (125 tools FRT)
+# MCP connected (ví dụ)
 - sequential-thinking
+- playwright, gitlab...
 
-# Sau khi refresh FRT token
+# Sau khi đổi MCP config
 /reload-mcp   # inside Hermes để reconnect</code></pre>
                     </div>
 
                     <div class="lesson-box" style="margin-top: 1rem;">
                         <h4>⚠️ Lưu ý quan trọng</h4>
-                        <p>Sau khi <span class="inline-code">frt-refresh</span> chạy để refresh Keycloak JWT, script đã update cả <span class="inline-code">~/.hermes/config.yaml</span> tự động. Nhưng vẫn cần gõ <span class="inline-code">/reload-mcp</span> bên trong Hermes để reconnect MCP với token mới.</p>
+                        <p>Sau khi thêm/sửa MCP server trong <span class="inline-code">~/.hermes/config.yaml</span>, cần gõ <span class="inline-code">/reload-mcp</span> bên trong Hermes để reconnect MCP với config mới.</p>
                     </div>
                 </div>
             </div>
@@ -1216,69 +1180,6 @@ tail -f /tmp/9router.log</code></pre>
     </div><!-- end #page-blur -->
 
     <script>
-        // --- Password Protection ---
-        const PASS = '123';
-        const SESSION_KEY = 'hr9r_auth';
-        const pageBlur = document.getElementById('page-blur');
-        const overlay = document.getElementById('auth-overlay');
-
-        function checkPw() {
-            const val = document.getElementById('pw-input').value;
-            if (val === PASS) {
-                sessionStorage.setItem(SESSION_KEY, '1');
-                unlock();
-            } else {
-                const err = document.getElementById('pw-error');
-                err.textContent = 'Sai mật khẩu, thử lại.';
-                document.getElementById('pw-input').value = '';
-                document.getElementById('pw-input').focus();
-                setTimeout(() => { err.textContent = ''; }, 2000);
-            }
-        }
-
-        function unlock() {
-            overlay.style.display = 'none';
-            pageBlur.style.filter = '';
-            pageBlur.style.pointerEvents = '';
-            pageBlur.style.userSelect = '';
-        }
-
-        if (sessionStorage.getItem(SESSION_KEY) === '1') {
-            unlock();
-        } else {
-            overlay.style.display = 'flex';
-            setTimeout(() => document.getElementById('pw-input').focus(), 100);
-        }
-
-        // --- Block DevTools ---
-        document.addEventListener('keydown', (e) => {
-            // F12
-            if (e.key === 'F12') { e.preventDefault(); return false; }
-            // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C / Ctrl+U
-            if (e.ctrlKey && e.shiftKey && ['I','i','J','j','C','c'].includes(e.key)) { e.preventDefault(); return false; }
-            if (e.ctrlKey && ['U','u'].includes(e.key)) { e.preventDefault(); return false; }
-            // Cmd+Option+I (Mac)
-            if (e.metaKey && e.altKey && ['I','i'].includes(e.key)) { e.preventDefault(); return false; }
-        });
-
-        document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        // Detect devtools open via size
-        let devtoolsOpen = false;
-        setInterval(() => {
-            if (window.outerWidth - window.innerWidth > 160 || window.outerHeight - window.innerHeight > 160) {
-                if (!devtoolsOpen) {
-                    devtoolsOpen = true;
-                    document.body.style.filter = 'blur(20px)';
-                }
-            } else {
-                devtoolsOpen = false;
-                if (sessionStorage.getItem(SESSION_KEY) === '1') {
-                    document.body.style.filter = '';
-                }
-            }
-        }, 1000);
-
         // Hamburger menu
         function toggleMenu() {
             document.getElementById('nav-links').classList.toggle('open');
