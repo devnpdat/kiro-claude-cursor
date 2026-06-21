@@ -392,6 +392,7 @@
                     <li><a href="#tunnel">Tunnel</a></li>
                     <li><a href="#tool-config">Config</a></li>
                     <li><a href="#lessons">Bài học</a></li>
+                    <li><a href="#setup-guide">Setup Guide</a></li>
                     <li class="nav-dropdown">
                         <div class="nav-dropdown-btn">📚 Pages ▾</div>
                         <div class="nav-dropdown-menu">
@@ -939,6 +940,266 @@ export OPENAI_API_KEY="&lt;9router-key&gt;"</code></pre>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- SETUP GUIDE -->
+    <section id="setup-guide">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="card-title">Hướng dẫn</p>
+                <h2>🚀 Setup từ đầu — Step by Step</h2>
+                <p style="color: var(--text-muted);">Verified trên macOS với Node v20+, Python 3.10+</p>
+            </div>
+
+            <!-- PREREQUISITES -->
+            <div class="animate-on-scroll" style="margin-bottom: 3rem;">
+                <h3 style="color: var(--accent-secondary); margin-bottom: 1.5rem;">Phần 0 — Prerequisites</h3>
+                <div class="grid-3">
+                    <div class="card">
+                        <div class="card-icon">🍺</div>
+                        <div class="card-title">Homebrew</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Package manager cho macOS</p>
+                        <pre><code>/bin/bash -c "$(curl -fsSL \
+https://raw.githubusercontent.com/Homebrew/\
+install/HEAD/install.sh)"
+
+brew --version  # verify</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🟩</div>
+                        <div class="card-title">Node.js v20+</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Yêu cầu Node v20 trở lên cho 9Router</p>
+                        <pre><code>brew install node
+
+node --version  # v20.x+
+npm --version   # v10.x+
+
+# Nếu đã có Node cũ:
+brew upgrade node</code></pre>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">🐍</div>
+                        <div class="card-title">Python 3.10+</div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">Yêu cầu Python 3.10+ cho Hermes</p>
+                        <pre><code>brew install python@3.12
+
+python3 --version  # 3.10+
+
+# Nếu đã có Python 3.10+
+# bỏ qua bước này</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9ROUTER SETUP -->
+            <div class="animate-on-scroll" style="margin-bottom: 3rem;">
+                <h3 style="color: var(--accent-9router); margin-bottom: 1.5rem;">Phần 1 — Cài 9Router</h3>
+                <div class="grid-2">
+                    <div>
+                        <div class="box-5w router" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 1</span><span>Cài qua npm</span></div>
+                            <pre><code>npm install -g 9router
+
+9router --version   # verify
+which 9router       # /opt/homebrew/bin/9router</code></pre>
+                        </div>
+                        <div class="box-5w router" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 2</span><span>Chạy lần đầu</span></div>
+                            <pre><code>9router
+# Mở browser: http://localhost:20128/dashboard</code></pre>
+                        </div>
+                        <div class="box-5w router" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 3</span><span>Setup providers trong dashboard</span></div>
+                            <div class="table-wrapper" style="margin-top: 0.8rem;">
+                                <table>
+                                    <thead><tr><th>Provider</th><th>Loại</th><th>Ghi chú</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Claude Code</td><td>OAuth</td><td>Anthropic account</td></tr>
+                                        <tr><td>Cursor</td><td>OAuth</td><td>Cursor account</td></tr>
+                                        <tr><td>Kiro</td><td>OAuth</td><td>AWS Builder ID</td></tr>
+                                        <tr><td>OpenRouter</td><td>API Key</td><td>Fallback — openrouter.ai</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.8rem;">OAuth providers: click <strong>Connect</strong> → browser mở → đăng nhập → authorize.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="box-5w router" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 4</span><span>Tạo Combo model</span></div>
+                            <p style="font-size: 0.9rem; margin-bottom: 0.8rem;">Vào <strong>Models → New Model</strong>:</p>
+                            <ul style="list-style: none; padding: 0; font-size: 0.9rem;">
+                                <li style="padding: 0.3rem 0;">▸ Name: <span class="inline-code">Combo-Company</span></li>
+                                <li style="padding: 0.3rem 0;">▸ Type: <strong>Fallback</strong></li>
+                                <li style="padding: 0.3rem 0;">▸ Thứ tự: Claude Code → Cursor → Kiro → OpenRouter</li>
+                            </ul>
+                        </div>
+                        <div class="box-5w router" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 5</span><span>Tạo API Key</span></div>
+                            <p style="font-size: 0.9rem;">Vào <strong>Settings → API Keys → Generate</strong>.<br>
+                            Lưu key ngay — không xem lại được.<br>
+                            Format: <span class="inline-code">9r-xxxxxxxxxxxx</span></p>
+                        </div>
+                        <div class="box-5w router">
+                            <div class="box-label"><span>Bước 6</span><span>Auto-start khi boot (launchd)</span></div>
+                            <pre><code># Kiểm tra đường dẫn node trước
+which node  # thường /opt/homebrew/bin/node
+
+cat > ~/Library/LaunchAgents/com.9router.autostart.plist &lt;&lt; 'EOF'
+&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+&lt;plist version="1.0"&gt;&lt;dict&gt;
+  &lt;key&gt;Label&lt;/key&gt;
+  &lt;string&gt;com.9router.autostart&lt;/string&gt;
+  &lt;key&gt;ProgramArguments&lt;/key&gt;
+  &lt;array&gt;
+    &lt;string&gt;/opt/homebrew/bin/node&lt;/string&gt;
+    &lt;string&gt;/opt/homebrew/lib/node_modules/9router/cli.js&lt;/string&gt;
+    &lt;string&gt;--tray&lt;/string&gt;
+    &lt;string&gt;--skip-update&lt;/string&gt;
+  &lt;/array&gt;
+  &lt;key&gt;EnvironmentVariables&lt;/key&gt;
+  &lt;dict&gt;
+    &lt;key&gt;PATH&lt;/key&gt;
+    &lt;string&gt;/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin&lt;/string&gt;
+  &lt;/dict&gt;
+  &lt;key&gt;RunAtLoad&lt;/key&gt;&lt;true/&gt;
+  &lt;key&gt;KeepAlive&lt;/key&gt;&lt;false/&gt;
+  &lt;key&gt;StandardOutPath&lt;/key&gt;
+  &lt;string&gt;/tmp/9router.log&lt;/string&gt;
+  &lt;key&gt;StandardErrorPath&lt;/key&gt;
+  &lt;string&gt;/tmp/9router.error.log&lt;/string&gt;
+&lt;/dict&gt;&lt;/plist&gt;
+EOF
+
+launchctl load ~/Library/LaunchAgents/com.9router.autostart.plist
+
+# Verify
+curl http://localhost:20128/v1/models</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HERMES SETUP -->
+            <div class="animate-on-scroll" style="margin-bottom: 3rem;">
+                <h3 style="color: var(--accent-hermes); margin-bottom: 1.5rem;">Phần 2 — Cài Hermes Agent</h3>
+                <div class="grid-2">
+                    <div>
+                        <div class="box-5w" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 1</span><span>Cài Hermes</span></div>
+                            <pre><code>curl -fsSL https://raw.githubusercontent.com/\
+NousResearch/hermes-agent/main/scripts/install.sh | bash
+
+# Mở terminal mới sau khi cài
+hermes --version</code></pre>
+                        </div>
+                        <div class="box-5w" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 2</span><span>Config trỏ vào 9Router</span></div>
+                            <pre><code># Cách nhanh nhất:
+hermes model
+# → chọn OpenAI API
+# → Base URL: http://localhost:20128/v1
+# → Model: Combo-Company
+# → API Key: 9r-xxxxxxxxxxxx
+
+# Hoặc edit thẳng:
+# ~/.hermes/config.yaml
+model:
+  provider: openai-api
+  base_url: http://localhost:20128/v1
+  default: Combo-Company
+
+# ~/.hermes/.env
+OPENAI_API_KEY=9r-xxxxxxxxxxxx</code></pre>
+                        </div>
+                        <div class="box-5w">
+                            <div class="box-label"><span>Bước 3</span><span>Test</span></div>
+                            <pre><code>hermes chat -q "hello, mày là ai?"
+# Nếu có response = OK ✓</code></pre>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="box-5w" style="margin-bottom: 1rem;">
+                            <div class="box-label"><span>Bước 4 (tuỳ chọn)</span><span>Setup Telegram Bot</span></div>
+                            <p style="font-size: 0.9rem; margin-bottom: 0.8rem;">1. Telegram → <strong>@BotFather</strong> → <span class="inline-code">/newbot</span> → lấy token<br>
+                            2. Telegram → <strong>@userinfobot</strong> → <span class="inline-code">/start</span> → lấy user ID</p>
+                            <pre><code>hermes gateway setup
+# → chọn Telegram
+# → nhập bot token
+# → nhập user ID
+
+# ~/.hermes/.env
+TELEGRAM_BOT_TOKEN=&lt;token từ BotFather&gt;
+TELEGRAM_ALLOWED_USERS=&lt;user_id&gt;
+TELEGRAM_HOME_CHANNEL=&lt;user_id&gt;</code></pre>
+                        </div>
+                        <div class="box-5w">
+                            <div class="box-label"><span>Bước 5</span><span>Auto-start Gateway khi boot</span></div>
+                            <pre><code>hermes gateway install
+# Tự tạo plist và load luôn
+
+hermes gateway status  # verify</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VERIFY + TROUBLESHOOTING -->
+            <div class="animate-on-scroll" style="margin-bottom: 3rem;">
+                <h3 style="color: var(--accent-secondary); margin-bottom: 1.5rem;">Phần 3 — Verify & Troubleshooting</h3>
+                <div class="grid-2">
+                    <div class="card panel-good">
+                        <h4 style="color: var(--accent-success); margin-bottom: 1rem;">✅ Checklist verify</h4>
+                        <pre><code># 1. 9Router đang chạy
+curl http://localhost:20128/v1/models | python3 -m json.tool
+
+# 2. Hermes gọi được qua 9Router
+hermes chat -q "1+1=?"
+
+# 3. Gateway Telegram online
+hermes gateway status
+
+# 4. Logs nếu có lỗi
+tail -f ~/.hermes/logs/gateway.log
+tail -f /tmp/9router.log</code></pre>
+                        <p style="margin-top: 1rem; font-size: 0.9rem;">Dashboard: <span class="inline-code">http://localhost:20128/dashboard</span></p>
+                    </div>
+                    <div class="card panel-bad">
+                        <h4 style="color: var(--accent-danger); margin-bottom: 1rem;">🔧 Troubleshooting</h4>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Triệu chứng</th><th>Fix</th></tr></thead>
+                                <tbody>
+                                    <tr><td><span class="inline-code">curl localhost:20128</span> timeout</td><td>Chạy <span class="inline-code">9router</span> hoặc <span class="inline-code">launchctl start com.9router.autostart</span></td></tr>
+                                    <tr><td>Hermes báo model not found</td><td>Kiểm tra tên model đúng trong dashboard → sửa <span class="inline-code">config.yaml</span></td></tr>
+                                    <tr><td>Telegram không nhận tin</td><td>Kiểm tra <span class="inline-code">which python3</span> khớp với plist</td></tr>
+                                    <tr><td>OAuth token expired</td><td>Dashboard → Providers → Reconnect</td></tr>
+                                    <tr><td>Tunnel không enable được</td><td>Tạo API key trước → bật Require API Key → Enable</td></tr>
+                                    <tr><td><span class="inline-code">npm install</span> lỗi permission</td><td><span class="inline-code">sudo npm install -g 9router</span></td></tr>
+                                    <tr><td><span class="inline-code">hermes</span> not found sau cài</td><td>Mở terminal mới hoặc <span class="inline-code">source ~/.zshrc</span></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILES SUMMARY -->
+            <div class="animate-on-scroll">
+                <h3 style="color: var(--accent-secondary); margin-bottom: 1.5rem;">Files quan trọng</h3>
+                <div class="card">
+                    <pre><code>~/.hermes/config.yaml                              # Hermes config chính
+~/.hermes/.env                                     # API keys
+~/.hermes/logs/gateway.log                         # Hermes gateway log
+~/Library/LaunchAgents/ai.hermes.gateway.plist     # Hermes auto-start
+~/Library/LaunchAgents/com.9router.autostart.plist # 9Router auto-start
+~/.9router/db/data.sqlite                          # 9Router usage DB
+/tmp/9router.log                                   # 9Router log</code></pre>
+                </div>
             </div>
         </div>
     </section>
