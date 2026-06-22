@@ -118,6 +118,24 @@
         .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; transition: transform 0.3s, background 0.3s; }
         .card:hover { transform: translateY(-4px); background: var(--bg-card-hover); }
 
+        .grid-5w1h { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .box-5w {
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 4px solid var(--accent-hermes);
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+        }
+        .box-5w.router { border-color: var(--accent-9router); }
+        .box-5w.how { border-color: var(--accent-secondary); grid-column: 1 / -1; }
+        .box-label {
+            font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 0.5rem;
+            display: flex; justify-content: space-between;
+        }
+        .box-label span:last-child { color: white; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .card-title { color: var(--accent-hermes); font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+
         pre { background: #000; padding: 1.5rem; border-radius: 12px; overflow-x: auto; border: 1px solid var(--border-color); margin: 1.2rem 0; }
         code { font-family: var(--font-mono); font-size: 0.88rem; color: #a5b4fc; }
         .inline-code { background: rgba(255, 255, 255, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #fca5a5; }
@@ -156,6 +174,7 @@
         .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
         @media (max-width: 768px) {
+            .box-5w.how { grid-column: 1; }
             .hamburger { display: flex; }
             .nav-links { display: none; flex-direction: column; gap: 0; position: absolute; top: 70px; left: 0; right: 0; background: rgba(13,13,20,0.98); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 1rem 1.5rem; z-index: 999; }
             .nav-links.open { display: flex; }
@@ -220,11 +239,14 @@
     <header>
         <div class="container">
             <nav>
-                <a href="#" class="logo">🐛 <span class="gradient-text">ACP Hermes: Rider & Zed</span></a>
+                <a href="index.html" class="logo">
+                    🤖 <span style="background: linear-gradient(135deg, var(--accent-hermes), var(--accent-9router)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">AI Toolkit — 5W1H</span>
+                </a>
                 <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
                     <span></span><span></span><span></span>
                 </button>
                 <ul class="nav-links" id="nav-links">
+                    <li><a href="#5w1h">5W1H</a></li>
                     <li><a href="#timeline">Timeline</a></li>
                     <li><a href="#root-cause">Root cause</a></li>
                     <li><a href="#fix">How to Fix</a></li>
@@ -235,9 +257,11 @@
                         <div class="nav-dropdown-menu">
                             <a href="index.html" class="nav-dropdown-item">
                                 <span class="item-icon">🤖</span><span class="item-label">Claude · Kiro · Cursor</span>
+                                <span class="item-badge badge-prev">Trang 1</span>
                             </a>
                             <a href="hermes-9router.html" class="nav-dropdown-item">
                                 <span class="item-icon">🔀</span><span class="item-label">Hermes & 9Router Setup</span>
+                                <span class="item-badge badge-prev">Trang 2</span>
                             </a>
                             <a href="acp-hermes-rider-zed.html" class="nav-dropdown-item">
                                 <span class="item-icon">🐛</span><span class="item-label">ACP Hermes: Rider & Zed</span>
@@ -266,6 +290,65 @@
             <div class="card panel-good animate-on-scroll" style="margin-top: 2.5rem; max-width: 760px; margin-left: auto; margin-right: auto;">
                 <p style="color: var(--text-muted); margin: 0;">✅ <strong style="color: var(--text-main);">Rider:</strong> model picker đã chạy ổn — fix bằng <span class="inline-code">provider: custom</span> trong config Hermes Agent, dropdown hiện đủ model qua 9Router.<br><br>
                 🐛 <strong style="color: var(--text-main);">Zed:</strong> không có model picker UI riêng — đọc model thẳng từ <span class="inline-code">~/.hermes/config.yaml</span> lúc process ACP khởi động, nên gặp lỗi 401 riêng được debug chi tiết dưới đây.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5W1H -->
+    <section id="5w1h">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <p class="card-title">5W1H</p>
+                <h2>🔌 ACP Hermes</h2>
+                <p style="color: var(--text-muted);">Hiểu đúng ACP (Agent Client Protocol) là gì và vì sao Rider + Zed đều dùng chung Hermes/9Router qua nó</p>
+            </div>
+
+            <div class="grid-5w1h animate-on-scroll">
+                <div class="box-5w">
+                    <div class="box-label"><span>WHAT</span><span>Là gì?</span></div>
+                    <p>ACP (Agent Client Protocol) là chuẩn giao tiếp giữa IDE và một AI agent chạy local. Hermes implement chuẩn này (<span class="inline-code">hermes acp</span>) để Rider và Zed có thể spawn Hermes như backend chat ngay trong IDE, dùng chung 1 config <span class="inline-code">~/.hermes/config.yaml</span> và 1 route 9Router phía sau.</p>
+                </div>
+
+                <div class="box-5w">
+                    <div class="box-label"><span>WHY</span><span>Tại sao dùng?</span></div>
+                    <p>Không cần cấu hình model/API key riêng cho mỗi IDE. Đổi model hay đổi key 1 lần trong Hermes (qua <span class="inline-code">hermes setup</span>) là cả Rider và Zed đều dùng được route mới — tránh tình trạng "401 ở chỗ này nhưng chỗ khác vẫn chạy" do config lệch nhau.</p>
+                </div>
+
+                <div class="box-5w">
+                    <div class="box-label"><span>WHO</span><span>Ai dùng?</span></div>
+                    <p>Dev dùng cả 2 IDE Rider (cho .NET BE) và Zed (cho task nhẹ/nhanh), muốn chat AI trực tiếp trong panel của IDE thay vì mở terminal Hermes riêng.</p>
+                </div>
+
+                <div class="box-5w">
+                    <div class="box-label"><span>WHEN</span><span>Khi nào dùng?</span></div>
+                    <p>• Mở thread chat mới trong Rider/Zed để hỏi nhanh, không rời IDE<br>• Sau khi đổi model/provider bằng <span class="inline-code">hermes setup</span> — luôn cần mở <strong>thread mới</strong>, process ACP cũ không tự reload config<br>• Khi cần debug 401 — đọc log trước khi đổi config</p>
+                </div>
+
+                <div class="box-5w router">
+                    <div class="box-label"><span>WHERE</span><span>Ở đâu?</span></div>
+                    <p>• Config dùng chung: <span class="inline-code">~/.hermes/config.yaml</span><br>• Log debug: <span class="inline-code">~/.hermes/logs/agent.log</span> (xem qua <span class="inline-code">hermes logs -f</span>)<br>• Rider: Settings của plugin Hermes Agent<br>• Zed: Agent Panel → ACP, trỏ tới lệnh <span class="inline-code">hermes acp</span></p>
+                </div>
+
+                <div class="box-5w how">
+                    <div class="box-label"><span>HOW</span><span>Cách dùng</span></div>
+                    <div class="grid-3" style="margin-top: 1rem;">
+                        <div>
+                            <h4 style="color: var(--accent-hermes); margin-bottom: 0.5rem;">Setup / đổi model</h4>
+                            <pre><code>hermes setup</code></pre>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">Wizard chọn endpoint + model, dùng chung cho cả Rider & Zed</p>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--accent-hermes); margin-bottom: 0.5rem;">Test nhanh qua CLI</h4>
+                            <pre><code>hermes -z "hello em"</code></pre>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">Verify config trước khi mở IDE, đỡ mất công debug trong UI</p>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--accent-hermes); margin-bottom: 0.5rem;">Xem log khi lỗi</h4>
+                            <pre><code>hermes logs -f</code></pre>
+                            <p style="font-size: 0.9rem; color: var(--text-muted);">UI Rider/Zed im lặng khi 401 — log mới thấy nguyên nhân thật</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
