@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>5W1H - Debug Zed + Hermes + 9Router (401)</title>
+    <title>5W1H - ACP Hermes trên Rider & Zed (Setup + Debug 401)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
 
@@ -220,7 +220,7 @@
     <header>
         <div class="container">
             <nav>
-                <a href="#" class="logo">🐛 <span class="gradient-text">Debug: Zed × Hermes × 9Router</span></a>
+                <a href="#" class="logo">🐛 <span class="gradient-text">ACP Hermes: Rider & Zed</span></a>
                 <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
                     <span></span><span></span><span></span>
                 </button>
@@ -239,8 +239,8 @@
                             <a href="hermes-9router.html" class="nav-dropdown-item">
                                 <span class="item-icon">🔀</span><span class="item-label">Hermes & 9Router Setup</span>
                             </a>
-                            <a href="zed-hermes-401-debug.html" class="nav-dropdown-item">
-                                <span class="item-icon">🐛</span><span class="item-label">Zed × Hermes 401 Debug</span>
+                            <a href="acp-hermes-rider-zed.html" class="nav-dropdown-item">
+                                <span class="item-icon">🐛</span><span class="item-label">ACP Hermes: Rider & Zed</span>
                                 <span class="item-badge badge-active">Hiện tại</span>
                             </a>
                         </div>
@@ -253,14 +253,19 @@
     <!-- Hero -->
     <section id="hero">
         <div class="container animate-on-scroll">
-            <h1>Debug log: <br><span class="gradient-text">Zed + Hermes ACP không trả lời (401)</span></h1>
-            <p>Ghi lại quá trình tìm và fix lỗi Hermes Agent chạy qua ACP trong Zed bị treo im, không trả lời tin nhắn — root cause là 2 lớp 401 Unauthorized khác nhau bị nhầm là cùng 1 lỗi.</p>
+            <h1>ACP Hermes trên <br><span class="gradient-text">Rider & Zed</span> — Setup + Debug 401</h1>
+            <p>Ghi lại quá trình setup Hermes Agent qua ACP cho cả Rider và Zed, cùng với debug log lỗi Zed bị treo im không trả lời tin nhắn — root cause là 2 lớp 401 Unauthorized khác nhau bị nhầm là cùng 1 lỗi.</p>
             <div class="tags">
+                <span class="tag">Rider</span>
                 <span class="tag">Zed</span>
                 <span class="tag router">Hermes ACP</span>
                 <span class="tag router">9Router</span>
                 <span class="tag bad">HTTP 401</span>
                 <span class="tag">hermes setup</span>
+            </div>
+            <div class="card panel-good animate-on-scroll" style="margin-top: 2.5rem; max-width: 760px; margin-left: auto; margin-right: auto;">
+                <p style="color: var(--text-muted); margin: 0;">✅ <strong style="color: var(--text-main);">Rider:</strong> model picker đã chạy ổn — fix bằng <span class="inline-code">provider: custom</span> trong config Hermes Agent, dropdown hiện đủ model qua 9Router.<br><br>
+                🐛 <strong style="color: var(--text-main);">Zed:</strong> không có model picker UI riêng — đọc model thẳng từ <span class="inline-code">~/.hermes/config.yaml</span> lúc process ACP khởi động, nên gặp lỗi 401 riêng được debug chi tiết dưới đây.</p>
             </div>
         </div>
     </section>
