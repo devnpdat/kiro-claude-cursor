@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5W1H - Debug Zed + Hermes + 9Router (401)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --bg-card-hover: #222230;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --accent-warning: #f59e0b;
+            --accent-hermes: #f97316;
+            --accent-9router: #ec4899;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        h1, h2, h3, h4 { font-weight: 800; line-height: 1.2; margin-bottom: 1rem; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent-hermes), var(--accent-9router));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: rgba(13, 13, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        nav { display: flex; justify-content: space-between; align-items: center; height: 70px; gap: 2rem; }
+
+        .logo { font-weight: 800; font-size: 1.1rem; color: white; text-decoration: none; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+
+        .nav-links { display: flex; gap: 1.2rem; list-style: none; align-items: center; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: color 0.3s; }
+        .nav-links a:hover { color: white; }
+
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-btn {
+            display: flex; align-items: center; gap: 6px;
+            color: white; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+            background: rgba(249,115,22,0.15); border: 1px solid rgba(249,115,22,0.4);
+            padding: 0.4rem 0.9rem; border-radius: 20px; transition: background 0.2s;
+        }
+        .nav-dropdown-btn:hover { background: rgba(249,115,22,0.3); }
+        .nav-dropdown-menu {
+            display: none; position: absolute; top: 100%; right: 0;
+            background: #1a1a24; border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 0.6rem; min-width: 260px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 100;
+            padding-top: 14px; margin-top: 0;
+        }
+        .nav-dropdown-menu::before { content: ''; position: absolute; top: -14px; left: 0; right: 0; height: 14px; }
+        .nav-dropdown:hover .nav-dropdown-menu,
+        .nav-dropdown-menu:hover { display: block; }
+        .nav-dropdown-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 0.7rem 1rem; border-radius: 10px;
+            text-decoration: none; color: var(--text-main);
+            font-size: 0.88rem; font-weight: 600; transition: background 0.2s;
+        }
+        .nav-dropdown-item:hover { background: rgba(255,255,255,0.06); }
+        .nav-dropdown-item .item-icon { font-size: 1.2rem; width: 28px; text-align: center; }
+        .nav-dropdown-item .item-label { flex: 1; white-space: nowrap; }
+        .nav-dropdown-item .item-badge { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 700; white-space: nowrap; }
+        .badge-active { background: rgba(249,115,22,0.2); color: #f97316; }
+        .badge-prev { background: rgba(6,182,212,0.2); color: #06b6d4; }
+        .badge-soon { background: rgba(148,163,184,0.15); color: #94a3b8; }
+        .nav-dropdown-divider { height: 1px; background: var(--border-color); margin: 0.4rem 0; }
+
+        #hero { padding: 180px 0 100px; text-align: center; position: relative; }
+        #hero h1 { font-size: clamp(2.2rem, 5vw, 4rem); letter-spacing: -1px; margin-bottom: 1.5rem; }
+        #hero p { font-size: 1.15rem; color: var(--text-muted); max-width: 740px; margin: 0 auto 2.5rem; }
+
+        .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.8rem; max-width: 850px; margin: 0 auto; }
+        .tag { background: rgba(249, 115, 22, 0.1); color: var(--accent-hermes); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; border: 1px solid rgba(249, 115, 22, 0.2); display: inline-flex; align-items: center; }
+        .tag.router { background: rgba(236, 72, 153, 0.1); color: var(--accent-9router); border-color: rgba(236, 72, 153, 0.2); }
+        .tag.bad { background: rgba(239,68,68,0.1); color: var(--accent-danger); border-color: rgba(239,68,68,0.25); }
+
+        section { padding: 4.5rem 0; border-bottom: 1px solid var(--border-color); }
+        .section-header { text-align: center; margin-bottom: 3rem; }
+        .section-header h2 { font-size: 2.2rem; }
+        .section-header p { color: var(--text-muted); max-width: 700px; margin: 0.8rem auto 0; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 2rem; }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; transition: transform 0.3s, background 0.3s; }
+        .card:hover { transform: translateY(-4px); background: var(--bg-card-hover); }
+
+        pre { background: #000; padding: 1.5rem; border-radius: 12px; overflow-x: auto; border: 1px solid var(--border-color); margin: 1.2rem 0; }
+        code { font-family: var(--font-mono); font-size: 0.88rem; color: #a5b4fc; }
+        .inline-code { background: rgba(255, 255, 255, 0.1); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85em; color: #fca5a5; }
+        .comment { color: #6b7280; }
+
+        .panel-good { border-top: 4px solid var(--accent-success); }
+        .panel-bad { border-top: 4px solid var(--accent-danger); }
+        .panel-info { border-top: 4px solid var(--accent-secondary); }
+
+        .timeline { display: flex; flex-direction: column; gap: 1.2rem; }
+        .timeline-item { display: flex; gap: 1.2rem; align-items: flex-start; }
+        .timeline-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .timeline-dot.bad { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.4); }
+        .timeline-dot.ok { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.4); }
+        .timeline-dot.info { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.4); }
+        .timeline-content h4 { font-size: 1rem; margin-bottom: 0.3rem; }
+        .timeline-content p { color: var(--text-muted); font-size: 0.92rem; margin: 0; }
+
+        .table-wrapper { overflow-x: auto; margin-top: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; background: var(--bg-card); }
+        th, td { padding: 1rem 1.2rem; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.92rem; }
+        th { background: rgba(255, 255, 255, 0.05); font-weight: 800; color: var(--accent-secondary); }
+        tr:last-child td { border-bottom: none; }
+
+        .lesson-box { background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .lesson-box h4 { color: var(--accent-primary); margin-bottom: 0.8rem; }
+
+        .cta-section { text-align: center; padding: 5rem 0; background: linear-gradient(180deg, transparent, rgba(249, 115, 22, 0.08)); border-bottom: none; }
+        .btn { display: inline-block; background: linear-gradient(135deg, var(--accent-hermes), var(--accent-9router)); color: white; padding: 1rem 2.5rem; border-radius: 30px; text-decoration: none; font-weight: bold; font-size: 1.1rem; transition: transform 0.3s, box-shadow 0.3s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(249, 115, 22, 0.3); }
+
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+        .hamburger span { display: block; width: 24px; height: 2px; background: white; border-radius: 2px; transition: transform 0.3s, opacity 0.3s; }
+        .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .hamburger.open span:nth-child(2) { opacity: 0; }
+        .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        @media (max-width: 768px) {
+            .hamburger { display: flex; }
+            .nav-links { display: none; flex-direction: column; gap: 0; position: absolute; top: 70px; left: 0; right: 0; background: rgba(13,13,20,0.98); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 1rem 1.5rem; z-index: 999; }
+            .nav-links.open { display: flex; }
+            .nav-links li { border-bottom: 1px solid var(--border-color); }
+            .nav-links li:last-child { border-bottom: none; }
+            .nav-links a { padding: 0.8rem 0; display: block; font-size: 1rem; }
+            .nav-dropdown-btn { background: none; border: none; padding: 0.8rem 0; font-size: 1rem; width: 100%; justify-content: flex-start; color: var(--text-muted); }
+            .nav-dropdown-menu { display: none; position: static; box-shadow: none; background: rgba(255,255,255,0.03); border-radius: 10px; margin: 0.5rem 0; border: 1px solid var(--border-color); }
+            .nav-dropdown.open .nav-dropdown-menu { display: block; }
+            #hero { padding: 120px 0 60px; }
+            #hero h1 { font-size: 1.9rem; }
+            #hero p { font-size: 1rem; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .section-header h2 { font-size: 1.7rem; }
+            .table-wrapper { font-size: 0.78rem; }
+            th, td { padding: 0.6rem; }
+        }
+
+        .animate-on-scroll { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.8s ease-out; }
+        .animate-on-scroll.visible { opacity: 1; transform: translateY(0); }
+        .delay-1 { transition-delay: 0.1s; }
+        .delay-2 { transition-delay: 0.2s; }
+
+        /* ===== Password gate ===== */
+        #gate {
+            position: fixed; inset: 0; z-index: 5000;
+            background: var(--bg-main);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 1.2rem; padding: 2rem; text-align: center;
+        }
+        #gate h2 { font-size: 1.6rem; }
+        #gate p { color: var(--text-muted); max-width: 420px; }
+        #gate-form { display: flex; gap: 0.6rem; flex-wrap: wrap; justify-content: center; }
+        #gate-input {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            color: var(--text-main); padding: 0.8rem 1.2rem; border-radius: 10px;
+            font-size: 1rem; width: 220px; text-align: center;
+        }
+        #gate-input:focus { outline: none; border-color: var(--accent-hermes); }
+        #gate-error { color: var(--accent-danger); font-size: 0.85rem; min-height: 1.2rem; }
+        #page-blur { display: none; }
+        #page-blur.unlocked { display: block; }
+    </style>
+</head>
+<body>
+
+    <!-- Password Gate -->
+    <div id="gate">
+        <div style="font-size:2.5rem;">🔒</div>
+        <h2>Trang cá nhân — cần password</h2>
+        <p>Nội dung debug log nội bộ, chỉ để lưu lại cho cá nhân. Nhập password để xem.</p>
+        <form id="gate-form">
+            <input id="gate-input" type="password" placeholder="Password" autocomplete="off" />
+            <button type="submit" class="btn" style="padding:0.8rem 1.6rem; font-size:0.95rem;">Vào xem</button>
+        </form>
+        <div id="gate-error"></div>
+    </div>
+
+    <div id="page-blur">
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="#" class="logo">🐛 <span class="gradient-text">Debug: Zed × Hermes × 9Router</span></a>
+                <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
+                    <span></span><span></span><span></span>
+                </button>
+                <ul class="nav-links" id="nav-links">
+                    <li><a href="#timeline">Timeline</a></li>
+                    <li><a href="#root-cause">Root cause</a></li>
+                    <li><a href="#fix">Cách fix</a></li>
+                    <li><a href="#switch-model">Đổi model</a></li>
+                    <li><a href="#lessons">Bài học</a></li>
+                    <li class="nav-dropdown">
+                        <div class="nav-dropdown-btn">📚 Pages ▾</div>
+                        <div class="nav-dropdown-menu">
+                            <a href="index.html" class="nav-dropdown-item">
+                                <span class="item-icon">🤖</span><span class="item-label">Claude · Kiro · Cursor</span>
+                            </a>
+                            <a href="hermes-9router.html" class="nav-dropdown-item">
+                                <span class="item-icon">🔀</span><span class="item-label">Hermes & 9Router Setup</span>
+                            </a>
+                            <a href="zed-hermes-401-debug.html" class="nav-dropdown-item">
+                                <span class="item-icon">🐛</span><span class="item-label">Zed × Hermes 401 Debug</span>
+                                <span class="item-badge badge-active">Hiện tại</span>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section id="hero">
+        <div class="container animate-on-scroll">
+            <h1>Debug log: <br><span class="gradient-text">Zed + Hermes ACP không trả lời (401)</span></h1>
+            <p>Ghi lại quá trình tìm và fix lỗi Hermes Agent chạy qua ACP trong Zed bị treo im, không trả lời tin nhắn — root cause là 2 lớp 401 Unauthorized khác nhau bị nhầm là cùng 1 lỗi.</p>
+            <div class="tags">
+                <span class="tag">Zed</span>
+                <span class="tag router">Hermes ACP</span>
+                <span class="tag router">9Router</span>
+                <span class="tag bad">HTTP 401</span>
+                <span class="tag">hermes setup</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Timeline -->
+    <section id="timeline">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>🕒 Diễn biến</h2>
+                <p>Mở thread mới trong Zed, gửi "hello em" — không thấy gì trả lời, panel chat trống trơn.</p>
+            </div>
+            <div class="card animate-on-scroll">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-dot bad">1</div>
+                        <div class="timeline-content">
+                            <h4>Gửi tin nhắn trong Zed, không có phản hồi</h4>
+                            <p>Thread "hello em" gửi 2 tin nhắn liên tiếp, panel chat vẫn trống. Không có lỗi hiển thị trên UI Zed — chỉ icon loading bên cạnh mode "Default".</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot info">2</div>
+                        <div class="timeline-content">
+                            <h4>Check log: <span class="inline-code">hermes logs -f</span></h4>
+                            <p>Log lộ ra lỗi thật: <span class="inline-code">HTTP 401 Invalid API key</span> khi gọi <span class="inline-code">provider=custom base_url=http://localhost:20128/v1 model=Combo-Company</span> — đây là route qua 9Router (gateway local).</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot info">3</div>
+                        <div class="timeline-content">
+                            <h4>Đổi default model bằng <span class="inline-code">hermes model</span></h4>
+                            <p>Chọn <span class="inline-code">anthropic/claude-opus-4.8 (via OpenRouter)</span> — tưởng đã fix, nhưng thread cũ trong Zed vẫn không trả lời vì session ACP đã khởi động từ trước, không tự reload config.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot bad">4</div>
+                        <div class="timeline-content">
+                            <h4>Mở thread mới, test thẳng bằng CLI <span class="inline-code">hermes</span> — vẫn lỗi 401, nhưng khác message</h4>
+                            <p><span class="inline-code">Error: HTTP 401 — "User not found."</span> từ <span class="inline-code">https://openrouter.ai/api/v1</span>. Đây là lỗi thứ 2, độc lập với lỗi 9Router ban đầu — API key OpenRouter cũng bị provider từ chối.</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-dot ok">5</div>
+                        <div class="timeline-content">
+                            <h4>Chạy <span class="inline-code">hermes setup</span> → re-config custom endpoint trỏ về 9Router</h4>
+                            <p>Nhập lại API base URL <span class="inline-code">http://localhost:20128/v1</span> + key 9Router mới → verify thành công (15 models visible) → chọn model <span class="inline-code">Combo-Company</span> → ✅ hết lỗi.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Root cause -->
+    <section id="root-cause">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>🔍 Root cause</h2>
+                <p>2 lớp lỗi 401 chồng lên nhau, dễ nhầm là 1 lỗi duy nhất.</p>
+            </div>
+            <div class="grid-2 animate-on-scroll">
+                <div class="card panel-bad">
+                    <h4 style="color: var(--accent-danger);">Lớp 1 — Session ACP cũ dùng config đã hỏng</h4>
+                    <p style="color: var(--text-muted); margin-top: 0.8rem;">Thread Zed khởi động <em>trước</em> lúc đổi model bằng <span class="inline-code">hermes model</span>. Process ACP không hot-reload config giữa session, nên vẫn kẹt ở route 9Router cũ (key invalid).</p>
+                    <p style="margin-top: 1rem;"><strong>Fix:</strong> đóng thread cũ, mở thread mới để spawn process mới đọc config hiện tại.</p>
+                </div>
+                <div class="card panel-bad">
+                    <h4 style="color: var(--accent-danger);">Lớp 2 — Key OpenRouter trực tiếp cũng bị reject</h4>
+                    <p style="color: var(--text-muted); margin-top: 0.8rem;">Sau khi đổi sang <span class="inline-code">provider: openrouter</span> trực tiếp (không qua 9Router), vẫn 401 "User not found" — key OpenRouter trong config không hợp lệ với account.</p>
+                    <p style="margin-top: 1rem;"><strong>Fix:</strong> quay lại dùng route qua 9Router (key 9Router còn sống), không phụ thuộc trực tiếp vào OpenRouter key nữa.</p>
+                </div>
+            </div>
+            <div class="lesson-box animate-on-scroll" style="margin-top: 2rem;">
+                <h4>💡 Tại sao dễ nhầm lẫn</h4>
+                <p>Cả 2 lỗi đều trả về <span class="inline-code">HTTP 401</span>, nhìn rất giống nhau trên UI Zed (chat panel trống, không gì hiện ra). Chỉ phân biệt được khi đọc kỹ <span class="inline-code">base_url</span> + message chi tiết trong <span class="inline-code">~/.hermes/logs/agent.log</span>.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Fix steps -->
+    <section id="fix">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>🛠️ Cách fix từng bước</h2>
+                <p>Toàn bộ qua <span class="inline-code">hermes setup</span> — không cần sửa file config tay.</p>
+            </div>
+            <div class="card panel-good animate-on-scroll">
+                <pre><code><span class="comment"># 1. Xem log trước để xác định đúng lỗi</span>
+hermes logs -f
+
+<span class="comment"># 2. Mở wizard setup</span>
+hermes setup
+<span class="comment"># → chọn "custom (direct API)"
+# → API base URL: http://localhost:20128/v1   (gateway 9Router local)
+# → API key: nhập key 9Router của bạn (lấy ở dashboard 9Router, KHÔNG share công khai)
+# → đợi "Verified endpoint ... (N model(s) visible)"
+# → Select API compatibility mode → giữ "Chat Completions" (Enter)
+# → Select model → chọn model bạn cần (ví dụ Combo-Company)
+# → Context length → để trống, Enter (auto-detect)
+# → Display name → để trống, Enter (giữ mặc định)</span>
+
+<span class="comment"># 3. Test ngay bằng CLI, không cần qua Zed</span>
+hermes -z "hello em"
+
+<span class="comment"># 4. Quan trọng: đóng thread Zed cũ, mở THREAD MỚI</span>
+<span class="comment"># (process ACP cũ không tự reload config, phải spawn mới)</span></code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Switch model -->
+    <section id="switch-model">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>🔁 Đổi model Combo-Company → Private (trên Zed)</h2>
+                <p>Cùng 1 luồng <span class="inline-code">hermes setup</span>, chỉ khác bước chọn model cuối.</p>
+            </div>
+            <div class="card panel-info animate-on-scroll">
+                <pre><code>hermes setup
+<span class="comment"># → chọn "custom (direct API)"
+# → API base URL [http://localhost:20128/v1]: Enter (giữ nguyên)
+# → API key [sk-xxxx...]: Enter (giữ key hiện tại, không cần nhập lại)
+# → "Verified endpoint via .../v1/models (N model(s) visible)"
+# → Select API compatibility mode: Enter (giữ "Chat Completions")
+# → Select model [1-N] or type name:
+#      1. Combo-Company
+#      2. Private          ← gõ "2" thay vì "1"
+#      ...
+# → Context length in tokens: Enter (auto-detect)
+# → Display name: Enter (giữ mặc định)
+#
+# Kết quả:
+# Default model set to: Private (via http://localhost:20128/v1)</span></code></pre>
+                <p style="margin-top: 1rem; color: var(--text-muted); font-size: 0.92rem;">Đổi qua lại giữa các combo (<span class="inline-code">Combo-Company</span>, <span class="inline-code">Private</span>, ...) chỉ là đổi <strong>số thứ tự</strong> ở bước "Select model" — không cần cấu hình lại endpoint hay key mỗi lần.</p>
+            </div>
+            <div class="table-wrapper animate-on-scroll">
+                <table>
+                    <thead><tr><th>Bước</th><th>Giữ nguyên / Đổi</th></tr></thead>
+                    <tbody>
+                        <tr><td>API base URL</td><td>Giữ nguyên — Enter</td></tr>
+                        <tr><td>API key</td><td>Giữ nguyên — Enter</td></tr>
+                        <tr><td>API compatibility mode</td><td>Giữ "Chat Completions" — Enter</td></tr>
+                        <tr><td>Select model</td><td><strong>Đổi</strong> — gõ số tương ứng combo muốn dùng</td></tr>
+                        <tr><td>Context length / Display name</td><td>Giữ nguyên — Enter</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lessons -->
+    <section id="lessons">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2>📌 Bài học</h2>
+            </div>
+            <div class="grid-2 animate-on-scroll">
+                <div class="lesson-box">
+                    <h4>Process ACP không hot-reload config</h4>
+                    <p style="color: var(--text-muted);">Đổi model/provider xong nhớ mở <strong>thread mới</strong> trong Zed/Rider, đừng tiếp tục gửi trong thread cũ.</p>
+                </div>
+                <div class="lesson-box">
+                    <h4>401 không có nghĩa là cùng 1 nguyên nhân</h4>
+                    <p style="color: var(--text-muted);">Luôn đọc <span class="inline-code">base_url</span> trong log để biết đang fail ở route nào (9Router local vs. provider trực tiếp).</p>
+                </div>
+                <div class="lesson-box">
+                    <h4><span class="inline-code">hermes logs -f</span> là bước đầu tiên</h4>
+                    <p style="color: var(--text-muted);">UI Zed im lặng khi lỗi — log chi tiết luôn ở <span class="inline-code">~/.hermes/logs/agent.log</span>.</p>
+                </div>
+                <div class="lesson-box">
+                    <h4>Không bao giờ paste key/token thật ra ngoài</h4>
+                    <p style="color: var(--text-muted);">Khi debug config có chứa secret, che giá trị bằng <span class="inline-code">***</span> trước khi gửi đi bất kỳ đâu (chat, log công khai, repo).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container animate-on-scroll">
+            <h2 style="font-size: 2.2rem; margin-bottom: 1rem;">✅ Đã fix xong</h2>
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2rem;">Hermes ACP trong Zed hoạt động lại bình thường qua route 9Router.</p>
+            <a href="index.html" class="btn">← Quay lại trang chính</a>
+        </div>
+    </section>
+
+    </div><!-- end #page-blur -->
+
+    <script>
+        // Password gate — client-side only, chỉ để chặn người vô tình lướt qua, KHÔNG phải bảo mật thật
+        (function () {
+            var GATE_KEY = 'zed-hermes-debug-unlocked';
+            var gate = document.getElementById('gate');
+            var pageBlur = document.getElementById('page-blur');
+            var form = document.getElementById('gate-form');
+            var input = document.getElementById('gate-input');
+            var error = document.getElementById('gate-error');
+
+            function unlock() {
+                gate.style.display = 'none';
+                pageBlur.classList.add('unlocked');
+                try { sessionStorage.setItem(GATE_KEY, '1'); } catch (e) {}
+            }
+
+            try {
+                if (sessionStorage.getItem(GATE_KEY) === '1') unlock();
+            } catch (e) {}
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                if (input.value === '123') {
+                    unlock();
+                } else {
+                    error.textContent = 'Sai password.';
+                    input.value = '';
+                    input.focus();
+                }
+            });
+        })();
+
+        // Hamburger menu
+        function toggleMenu() {
+            document.getElementById('nav-links').classList.toggle('open');
+            document.getElementById('hamburger').classList.toggle('open');
+        }
+        document.querySelectorAll('#nav-links a').forEach(function (a) {
+            a.addEventListener('click', function () {
+                document.getElementById('nav-links').classList.remove('open');
+                document.getElementById('hamburger').classList.remove('open');
+            });
+        });
+        document.querySelectorAll('.nav-dropdown-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                if (window.innerWidth <= 768) {
+                    e.stopPropagation();
+                    btn.closest('.nav-dropdown').classList.toggle('open');
+                }
+            });
+        });
+
+        // Scroll animations
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.animate-on-scroll').forEach(function (el) { observer.observe(el); });
+    </script>
+</body>
+</html>
