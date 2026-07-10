@@ -1,8 +1,8 @@
 ---
-title: "Learn — Học Kỹ Thuật Backend .NET Từ Cốt Lõi | 8 Bài Chuyên Sâu"
-description: "Lộ trình 8 bài học backend .NET chuyên sâu dành cho senior engineer: CPU/I/O-bound, async/await, K8s scaling, Kafka tuning, Database indexing, Caching, Observability (OpenTelemetry), Memory & GC. Code C# kèm ẩn dụ thực tế."
-tags: [dotnet, backend, performance, kafka, redis, docker, kubernetes, observability, memory-management]
-keywords: [.NET backend, học .NET chuyên sâu, C# performance, K8s pod sizing, Kafka optimization, Redis caching, OpenTelemetry, .NET garbage collection, senior .NET engineer]
+title: "Learn — Học Kỹ Thuật Backend .NET Từ Cốt Lõi | 9 Bài Chuyên Sâu"
+description: "Lộ trình 9 bài học backend .NET chuyên sâu dành cho senior engineer: CPU/I/O-bound, async/await, K8s scaling, Kafka tuning, Database indexing, Caching, Observability (OpenTelemetry), Memory & GC, Hardware & Platform. Code C# kèm ẩn dụ thực tế."
+tags: [dotnet, backend, performance, kafka, redis, docker, kubernetes, observability, memory-management, hardware, linux, cpu]
+keywords: [.NET backend, học .NET chuyên sâu, C# performance, K8s pod sizing, Kafka optimization, Redis caching, OpenTelemetry, .NET garbage collection, Core i5 vs i7 vs i9, Linux server, C# vs Node.js vs Python, server hardware]
 ---
 
 # 🧠 Learn — Học Kỹ Thuật Từ Cốt Lõi
@@ -24,8 +24,9 @@ keywords: [.NET backend, học .NET chuyên sâu, C# performance, K8s pod sizing
 | 06 | [Caching — Redis patterns](06-caching-strategy-redis.md) | Tủ đông quán phở, cache stampede, invalidation |
 | 07 | [Observability — metrics, logs, traces](07-observability-metrics-logs-traces.md) | OpenTelemetry, Prometheus, Grafana, correlation ID |
 | 08 | [Memory & GC .NET](08-memory-and-gc-dotnet.md) | Stack vs Heap, Generations, LOH, memory leak |
+| 09 | [Hardware & Platform — CPU, RAM, GPU, OS](09-hardware-and-platform-cpu-gpu-ram-os.md) | i5/i7/i9/Xeon, Linux vs Windows, C# vs Node vs Python |
 
-## 🎯 Đã hoàn thành lộ trình 8 bài — Từ nền tảng đến chuyên sâu
+## 🎯 Đã hoàn thành lộ trình 9 bài — Từ nền tảng đến chuyên sâu
 
 Lộ trình này bao phủ mọi khía cạnh của backend .NET hiệu suất cao:
 
@@ -38,6 +39,7 @@ Lộ trình này bao phủ mọi khía cạnh của backend .NET hiệu suất c
 | 🧊 Caching | 6 | Redis patterns, stampede, invalidation |
 | 👁️ Observability | 7 | Metrics, logs, traces, OpenTelemetry |
 | 🧠 Memory | 8 | Stack/Heap, GC Gen0/1/2, LOH, memory leak |
+| 🏗️ Hardware & Platform | 9 | CPU i5/i7/i9/Xeon, RAM, GPU, Linux, C# vs Node vs Python |
 
 ---
 
