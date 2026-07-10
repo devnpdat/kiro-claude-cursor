@@ -1,0 +1,6 @@
+# robots.txt for kiro-claude-cursor
+# https://devnpdat.github.io/kiro-claude-cursor/
+
+User-agent: *
+Allow: /
+Sitemap: https://devnpdat.github.io/kiro-claude-cursor/sitemap.xml

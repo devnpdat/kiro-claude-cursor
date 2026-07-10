@@ -1,0 +1,69 @@
+name: 🔄 SEO Content Freshness
+
+on:
+  schedule:
+    # Chạy mỗi Chủ nhật lúc 2:00 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    # Cho phép chạy thủ công từ Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Update dateModified in all HTML files
+        run: |
+          TODAY=$(date -u +%Y-%m-%d)
+          echo "Today: $TODAY"
+
+          # Update dateModified and datePublished meta tags in Learn/*.html files
+          for f in Learn/*.html; do
+            [ -f "$f" ] || continue
+            # Update dateModified
+            if grep -q 'name="dateModified"' "$f"; then
+              sed -i "s/name=\"dateModified\" content=\"[0-9-]*\"/name=\"dateModified\" content=\"$TODAY\"/" "$f"
+              echo "  ✓ Updated dateModified in $f"
+            fi
+          done
+
+          # Update index.html and Learn/index.html
+          for f in index.html Learn/index.html; do
+            [ -f "$f" ] || continue
+            if grep -q 'name="dateModified"' "$f"; then
+              sed -i "s/name=\"dateModified\" content=\"[0-9-]*\"/name=\"dateModified\" content=\"$TODAY\"/" "$f"
+              echo "  ✓ Updated dateModified in $f"
+            fi
+          done
+
+          # Update sitemap.xml lastmod dates
+          if [ -f sitemap.xml ]; then
+            sed -i "s|<lastmod>[0-9-]*</lastmod>|<lastmod>$TODAY</lastmod>|g" sitemap.xml
+            echo "  ✓ Updated sitemap.xml lastmod"
+          fi
+
+          # Update feed.xml updated date
+          if [ -f feed.xml ]; then
+            sed -i "s|<updated>[0-9T:Z-]*</updated>|<updated>${TODAY}T00:00:00Z</updated>|g" feed.xml
+            echo "  ✓ Updated feed.xml updated"
+          fi
+
+      - name: Commit and push
+        run: |
+          git config user.name "SEO Bot"
+          git config user.email "seo-bot@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "🔄 Weekly SEO freshness — $(date -u +%Y-%m-%d)"
+          git push
+          echo "✅ Pushed freshness update"

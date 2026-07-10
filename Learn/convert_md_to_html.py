@@ -1,15 +1,31 @@
 #!/usr/bin/env python3
 """Convert .md articles in Learn/ to .html for GitHub Pages.
-Preserves .md files, outputs .html with dark theme + OG tags + JSON-LD per article."""
+SEO-optimized: BreadcrumbList, Article + Course schema, lastModified, Person sameAs, OG image, breadcrumb UI."""
 
 import os, re, json
 import markdown
-from markdown.extensions import fenced_code, codehilite, tables, toc
 
 LEARN_DIR = "/Users/npdat132/Works/kiro-claude-cursor/Learn"
 BASE_URL = "https://devnpdat.github.io/kiro-claude-cursor"
 LINKEDIN = "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+GITHUB = "https://github.com/devnpdat"
 AUTHOR = "Phú Đạt Nguyễn"
+OG_IMAGE = f"{BASE_URL}/assets/og-image.png"
+TODAY = "2026-07-10"
+
+# Article order for prev/next linking
+ARTICLES = [
+    {"id": "00", "slug": "00-cach-hoc-ky-thuat-chuyen-sau-nho-lau", "title": "Bài 0: Cách Học Kỹ Thuật Chuyên Sâu & Nhớ Lâu"},
+    {"id": "01", "slug": "01-cpu-bound-vs-io-bound", "title": "Bài 1: CPU-bound vs I/O-bound"},
+    {"id": "02", "slug": "02-thread-vs-async-await", "title": "Bài 2: Thread vs Async/Await"},
+    {"id": "03", "slug": "03-scale-vertical-vs-horizontal-k8s", "title": "Bài 3: Scale — Vertical vs Horizontal, K8s"},
+    {"id": "04", "slug": "04-kafka-cau-hinh-toi-uu", "title": "Bài 4: Kafka — Cấu hình tối ưu"},
+    {"id": "05", "slug": "05-database-performance-index-query-plan", "title": "Bài 5: Database Performance"},
+    {"id": "06", "slug": "06-caching-strategy-redis", "title": "Bài 6: Caching Strategy — Redis"},
+    {"id": "07", "slug": "07-observability-metrics-logs-traces", "title": "Bài 7: Observability"},
+    {"id": "08", "slug": "08-memory-and-gc-dotnet", "title": "Bài 8: Memory & GC .NET"},
+    {"id": "09", "slug": "09-hardware-and-platform-cpu-gpu-ram-os", "title": "Bài 9: Hardware & Platform"},
+]
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="vi">
@@ -19,17 +35,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <title>{title} | {author}</title>
     <meta name="description" content="{description}">
     <meta name="author" content="{author}">
+    <meta name="dateModified" content="{date}">
+    <meta name="datePublished" content="{date}">
     <meta property="og:title" content="{og_title}">
     <meta property="og:description" content="{description}">
     <meta property="og:url" content="{url}">
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="{author} — .NET Developer">
+    <meta property="og:image" content="{og_image}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{og_title}">
     <meta name="twitter:description" content="{description}">
+    <meta name="twitter:image" content="{og_image}">
     <link rel="canonical" href="{url}">
     <script type="application/ld+json">
-    {jsonld}
+    {jsonld_main}
+    </script>
+    <script type="application/ld+json">
+    {jsonld_breadcrumb}
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
@@ -56,7 +81,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             background-size: 30px 30px;
         }}
         .container {{ max-width: 800px; margin: 0 auto; padding: 2rem; }}
-        /* Article content */
+        /* Breadcrumb */
+        .breadcrumb {{
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.8rem 2rem; max-width: 800px; margin: 0 auto;
+            font-size: 0.85rem; color: var(--text-muted);
+        }}
+        .breadcrumb a {{ color: var(--text-muted); text-decoration: none; }}
+        .breadcrumb a:hover {{ color: white; text-decoration: underline; }}
+        .breadcrumb .sep {{ color: rgba(255,255,255,0.2); }}
+        .breadcrumb .current {{ color: var(--accent-secondary); }}
+        /* Article */
         .article {{ background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }}
         .article h1 {{ font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }}
         .article h1 .gradient {{ background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }}
@@ -85,7 +120,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
         .article th, .article td {{ padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }}
         .article th {{ background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }}
         .article tr:last-child td {{ border-bottom: none; }}
-        /* Code */
         .article code {{
             font-family: var(--font-mono);
             font-size: 0.9rem;
@@ -103,7 +137,6 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             margin: 1rem 0;
         }}
         .article pre code {{ background: none; padding: 0; color: #a5b4fc; }}
-        /* Details for quiz */
         .article details {{
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--border-color);
@@ -118,44 +151,63 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             cursor: pointer;
         }}
         .article details[open] {{ background: rgba(16,185,129,0.05); }}
-        /* Nav + Footer */
-        .nav-bar {{
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        /* Prev/Next nav */
+        .article-nav {{
+            display: flex; justify-content: space-between; gap: 1rem;
+            margin-top: 2rem; padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
         }}
-        .nav-bar a {{ color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }}
-        .nav-bar a:hover {{ color: white; }}
+        .article-nav a {{
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            flex: 1;
+            text-decoration: none;
+            color: var(--text-muted);
+            transition: border-color 0.2s;
+        }}
+        .article-nav a:hover {{
+            border-color: var(--accent-primary);
+            color: white;
+        }}
+        .article-nav a.next {{ text-align: right; }}
+        .article-nav .dir {{ font-size: 0.75rem; color: var(--accent-secondary); }}
+        .article-nav .nav-title {{ font-weight: 600; font-size: 0.95rem; }}
+        .article-nav a:only-child {{ flex: 0 1 auto; }}
+        /* Date badge */
+        .date-badge {{
+            display: inline-block; font-size: 0.8rem; color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }}
         .footer {{
             text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
             border-top: 1px solid var(--border-color); margin-top: 2rem;
         }}
         .footer a {{ color: var(--accent-primary); text-decoration: none; }}
         .footer a:hover {{ text-decoration: underline; }}
-        /* Callouts */
-        .callout {{
-            display: flex; align-items: flex-start; gap: 0.8rem;
-            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
-            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
-        }}
-        .callout.success {{ background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }}
-        .callout.danger {{ background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }}
-        .callout-icon {{ font-size: 1.2rem; flex-shrink: 0; }}
         @media (max-width: 600px) {{
             .container {{ padding: 1rem; }}
             .article {{ padding: 1.2rem; }}
             .article h1 {{ font-size: 1.5rem; }}
+            .article-nav {{ flex-direction: column; }}
         }}
     </style>
 </head>
 <body>
-    <div class="nav-bar">
+    <div class="breadcrumb">
         <a href="../index.html">🏠 Trang chính</a>
+        <span class="sep">›</span>
         <a href="index.html">📖 Learn</a>
+        <span class="sep">›</span>
+        <span class="current">{short_title}</span>
     </div>
     <div class="container">
         <div class="article">
+            <div class="date-badge">📅 Cập nhật lần cuối: {date}</div>
 {content}
         </div>
+        {article_nav}
     </div>
     <div class="footer">
         <a href="{linkedin}" target="_blank" rel="noopener">🔗 LinkedIn — {author}</a>
@@ -174,26 +226,29 @@ def parse_frontmatter(text):
         if len(parts) >= 3:
             raw = parts[1].strip()
             body = parts[2].strip()
-
-            # Simple YAML parser for our specific format
             for line in raw.split("\n"):
                 line = line.strip()
                 if ":" in line:
                     key, _, value = line.partition(":")
                     key = key.strip()
-                    value = value.strip()
-                    # Remove quotes
-                    value = value.strip('"').strip("'")
+                    value = value.strip().strip('"').strip("'")
                     meta[key] = value
-
     return meta, body
 
 
 def fix_md_links(html):
     """Convert .md links inside href to .html"""
-    # Links like <a href="01-file.md"> -> <a href="01-file.html">
-    html = re.sub(r'href="([^"]+)\.md"', r'href="\1.html"', html)
-    return html
+    return re.sub(r'href="([^"]+)\.md"', r'href="\1.html"', html)
+
+
+def get_prev_next(slug):
+    """Get prev and next article info."""
+    for i, art in enumerate(ARTICLES):
+        if art["slug"] == slug:
+            prev_art = ARTICLES[i-1] if i > 0 else None
+            next_art = ARTICLES[i+1] if i < len(ARTICLES)-1 else None
+            return prev_art, next_art
+    return None, None
 
 
 def convert_file(filepath):
@@ -207,54 +262,91 @@ def convert_file(filepath):
     title = meta.get("title", basename)
     description = meta.get("description", "")
     tags_raw = meta.get("tags", "")
-    # Clean tags
     tags = [t.strip().strip('"').strip("'") for t in tags_raw.strip("[]").split(",")] if tags_raw else []
 
     # Fix internal .md references in body
-    # Replace "Bài X: ..." link patterns
     body = re.sub(r'\(([^)]+)\.md\)', r'(\1.html)', body)
 
     # Convert markdown to HTML
     md = markdown.Markdown(
-        extensions=[
-            "fenced_code",
-            "codehilite",
-            "tables",
-            "toc",
-            "md_in_html",  # preserve HTML in markdown (<details>, etc.)
-        ]
+        extensions=["fenced_code", "codehilite", "tables", "toc", "md_in_html"]
     )
     content_html = md.convert(body)
-
-    # Fix any .md links that the markdown converter may have created
     content_html = fix_md_links(content_html)
 
     og_title = title.split("—")[0].strip(" #").strip()
-
     url = f"{BASE_URL}/Learn/{basename}.html"
 
-    jsonld = json.dumps({
+    # Person sameAs
+    person_jsonld = json.dumps({
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": AUTHOR,
+        "url": LINKEDIN,
+        "sameAs": [LINKEDIN, GITHUB]
+    }, ensure_ascii=False, indent=2)
+
+    # Article schema with dateModified
+    article_jsonld = json.dumps({
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": og_title,
         "description": description[:200] if description else "",
-        "author": {
-            "@type": "Person",
-            "name": AUTHOR,
-            "url": LINKEDIN
-        },
-        "url": url
+        "author": {"@type": "Person", "name": AUTHOR, "url": LINKEDIN},
+        "datePublished": TODAY,
+        "dateModified": TODAY,
+        "url": url,
+        "image": OG_IMAGE
     }, ensure_ascii=False, indent=2)
+
+    main_jsonld = f"{person_jsonld}\n    {article_jsonld}"
+
+    # BreadcrumbList
+    breadcrumb_jsonld = json.dumps({
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Trang chính", "item": BASE_URL + "/"},
+            {"@type": "ListItem", "position": 2, "name": "Learn", "item": BASE_URL + "/Learn/"},
+            {"@type": "ListItem", "position": 3, "name": og_title, "item": url}
+        ]
+    }, ensure_ascii=False, indent=2)
+
+    # Prev/Next links
+    prev_art, next_art = get_prev_next(basename)
+    nav_html = ""
+    if prev_art or next_art:
+        nav_html = '<nav class="article-nav">'
+        if prev_art:
+            prev_url = f"{prev_art['slug']}.html"
+            nav_html += f'<a href="{prev_url}" class="prev" rel="prev">'
+            nav_html += f'<div class="dir">← Bài trước</div>'
+            nav_html += f'<div class="nav-title">{prev_art["title"]}</div>'
+            nav_html += f'</a>'
+        else:
+            nav_html += '<div></div>'
+        if next_art:
+            next_url = f"{next_art['slug']}.html"
+            nav_html += f'<a href="{next_url}" class="next" rel="next">'
+            nav_html += f'<div class="dir">Bài tiếp theo →</div>'
+            nav_html += f'<div class="nav-title">{next_art["title"]}</div>'
+            nav_html += f'</a>'
+        nav_html += '</nav>'
 
     html = HTML_TEMPLATE.format(
         title=og_title,
+        short_title=og_title[:50],
         author=AUTHOR,
         description=description[:200].replace('"', "&quot;"),
+        date=TODAY,
         og_title=og_title,
         url=url,
-        jsonld=jsonld,
+        og_image=OG_IMAGE,
+        jsonld_main=main_jsonld,
+        jsonld_breadcrumb=breadcrumb_jsonld,
         content=content_html,
-        linkedin=LINKEDIN
+        article_nav=nav_html,
+        linkedin=LINKEDIN,
     )
 
     outpath = os.path.join(LEARN_DIR, f"{basename}.html")
