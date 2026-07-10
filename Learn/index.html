@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn — Kỹ thuật Backend .NET Từ Cốt Lõi</title>
+    <meta name="description" content="Lộ trình 9 bài học backend .NET chuyên sâu: CPU/I/O-bound, async/await, K8s scaling, Kafka tuning, Database, Caching, Observability, Memory & GC, Hardware & Platform.">
+    <meta name="keywords" content=".NET backend, C# performance, K8s pod sizing, Kafka optimization, Redis caching, OpenTelemetry, .NET garbage collection, server hardware">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.7;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            padding: 2rem;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+
+        /* Title */
+        h1 {
+            font-size: 2.8rem; font-weight: 800; line-height: 1.2;
+            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 3rem; font-size: 1.1rem; }
+
+        /* Back link */
+        .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; margin-bottom: 2rem; transition: color 0.2s; }
+        .back-link:hover { color: white; }
+
+        /* Cards grid */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; margin-bottom: 3rem; }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.4rem 1.5rem;
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+            text-decoration: none;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover { transform: translateY(-3px); background: #222230; border-color: rgba(139,92,246,0.3); }
+        .card .number {
+            font-size: 0.75rem; font-weight: 800; text-transform: uppercase;
+            color: var(--accent-secondary); letter-spacing: 1px; margin-bottom: 0.2rem;
+        }
+        .card .icon { font-size: 1.5rem; margin-bottom: 0.3rem; }
+        .card .title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .card .desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
+        .card .tags { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .card .tag {
+            font-size: 0.7rem; padding: 0.15rem 0.5rem;
+            background: rgba(139,92,246,0.1); border-radius: 8px;
+            color: var(--accent-secondary); font-weight: 600;
+        }
+
+        /* Section header */
+        .section-header {
+            display: flex; align-items: center; gap: 10px;
+            margin: 2.5rem 0 1.2rem; padding-bottom: 0.6rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .section-header h2 { font-size: 1.3rem; font-weight: 700; color: var(--accent-secondary); }
+        .section-header .count {
+            margin-left: auto; font-size: 0.8rem; color: var(--text-muted);
+            background: rgba(255,255,255,0.05); padding: 0.2rem 0.6rem; border-radius: 10px;
+        }
+
+        /* Summary table */
+        .table-wrapper { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 3rem; }
+        table { width: 100%; border-collapse: collapse; background: var(--bg-card); }
+        th, td { padding: 0.9rem 1.2rem; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
+        th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); white-space: nowrap; }
+        tr:last-child td { border-bottom: none; }
+        td a { color: var(--accent-primary); text-decoration: none; font-weight: 600; }
+        td a:hover { text-decoration: underline; }
+
+        /* Footer note */
+        .footer-note {
+            text-align: center; padding: 2rem 0; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer-note a { color: var(--accent-primary); text-decoration: none; }
+        .footer-note a:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.8rem; }
+            .card-grid { grid-template-columns: 1fr; }
+            th, td { padding: 0.6rem 0.8rem; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Back + Title -->
+    <a href="../index.html" class="back-link">← Quay về trang chính</a>
+    <h1>🧠 Learn</h1>
+    <p class="subtitle">Lộ trình 9 bài — kỹ thuật backend .NET từ cốt lõi đến chuyên sâu</p>
+
+    <!-- Quick summary table -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Chủ đề</th>
+                    <th>Bài</th>
+                    <th>Kiến thức cốt lõi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>⚡</td><td><a href="01-cpu-bound-vs-io-bound.md">1. CPU-bound vs I/O-bound</a></td><td>async/await, thread pool, 90% API là I/O</td></tr>
+                <tr><td>⚡</td><td><a href="02-thread-vs-async-await.md">2. Thread vs Async/Await</a></td><td>State machine, thread pool starvation</td></tr>
+                <tr><td>📈</td><td><a href="03-scale-vertical-vs-horizontal-k8s.md">3. Scale — K8s</a></td><td>Vertical vs Horizontal, pod sizing, HPA</td></tr>
+                <tr><td>📨</td><td><a href="04-kafka-cau-hinh-toi-uu.md">4. Kafka tối ưu</a></td><td>Producer/consumer tuning, partition</td></tr>
+                <tr><td>🗄️</td><td><a href="05-database-performance-index-query-plan.md">5. Database</a></td><td>Index, query plan, connection pool, N+1</td></tr>
+                <tr><td>🧊</td><td><a href="06-caching-strategy-redis.md">6. Caching Redis</a></td><td>Cache-aside, stampede, invalidation</td></tr>
+                <tr><td>👁️</td><td><a href="07-observability-metrics-logs-traces.md">7. Observability</a></td><td>OpenTelemetry, Prometheus, Grafana</td></tr>
+                <tr><td>🧠</td><td><a href="08-memory-and-gc-dotnet.md">8. Memory & GC</a></td><td>Stack/Heap, Gen0/1/2, LOH, memory leak</td></tr>
+                <tr><td>🏗️</td><td><a href="09-hardware-and-platform-cpu-gpu-ram-os.md">9. Hardware & Platform</a></td><td>CPU i5/i7/i9/Xeon, Linux, C# vs Node vs Python</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Detail cards -->
+    <div class="section-header">
+        <h2>📖 Chi tiết từng bài</h2>
+        <span class="count">9 bài</span>
+    </div>
+
+    <div class="card-grid">
+
+        <a href="00-cach-hoc-ky-thuat-chuyen-sau-nho-lau.md" class="card">
+            <span class="number">Bài 00</span>
+            <span class="icon">📚</span>
+            <span class="title">Cách học kỹ thuật chuyên sâu & nhớ lâu</span>
+            <span class="desc">Feynman Technique, First Principles, Active Recall, Spaced Repetition — bộ khung tư duy để học bất kỳ khái niệm kỹ thuật nào.</span>
+            <span class="tags"><span class="tag">phương pháp học</span></span>
+        </a>
+
+        <a href="01-cpu-bound-vs-io-bound.md" class="card">
+            <span class="number">Bài 01</span>
+            <span class="icon">🔥</span>
+            <span class="title">CPU-bound vs I/O-bound</span>
+            <span class="desc">Ẩn dụ đầu bếp — phân biệt 2 loại workload. Hiểu tại sao 90% API backend là I/O-bound và async/await giúp gì.</span>
+            <span class="tags"><span class="tag">concurrency</span><span class="tag">performance</span></span>
+        </a>
+
+        <a href="02-thread-vs-async-await.md" class="card">
+            <span class="number">Bài 02</span>
+            <span class="icon">🧵</span>
+            <span class="title">Thread vs Async/Await</span>
+            <span class="desc">Await không tạo thread mới. Thread pool starvation. State machine. Cấm .Result/.Wait().</span>
+            <span class="tags"><span class="tag">async</span><span class="tag">threading</span></span>
+        </a>
+
+        <a href="03-scale-vertical-vs-horizontal-k8s.md" class="card">
+            <span class="number">Bài 03</span>
+            <span class="icon">📈</span>
+            <span class="title">Scale — Vertical vs Horizontal, K8s</span>
+            <span class="desc">Ẩn dụ quán phở. Công thức tính số pod. HPA. Death Spiral. Vertical scaling vs horizontal.</span>
+            <span class="tags"><span class="tag">k8s</span><span class="tag">scaling</span></span>
+        </a>
+
+        <a href="04-kafka-cau-hinh-toi-uu.md" class="card">
+            <span class="number">Bài 04</span>
+            <span class="icon">📨</span>
+            <span class="title">Kafka — Cấu hình tối ưu</span>
+            <span class="desc">Ẩn dụ bến xe buýt. Producer tuning (acks, batching, compression). Consumer tuning. Partition strategy. Consumer lag.</span>
+            <span class="tags"><span class="tag">kafka</span><span class="tag">messaging</span></span>
+        </a>
+
+        <a href="05-database-performance-index-query-plan.md" class="card">
+            <span class="number">Bài 05</span>
+            <span class="icon">🗄️</span>
+            <span class="title">Database Performance — Index, Query Plan</span>
+            <span class="desc">Ẩn dụ thư viện sách. Clustered/non-clustered index. Đọc query plan. Connection pool sizing. N+1 problem.</span>
+            <span class="tags"><span class="tag">sql</span><span class="tag">database</span></span>
+        </a>
+
+        <a href="06-caching-strategy-redis.md" class="card">
+            <span class="number">Bài 06</span>
+            <span class="icon">🧊</span>
+            <span class="title">Caching Strategy — Redis</span>
+            <span class="desc">Ẩn dụ tủ đông quán phở. Cache-aside, read-through, write-through. Cache invalidation. Cache stampede prevention.</span>
+            <span class="tags"><span class="tag">redis</span><span class="tag">caching</span></span>
+        </a>
+
+        <a href="07-observability-metrics-logs-traces.md" class="card">
+            <span class="number">Bài 07</span>
+            <span class="icon">👁️</span>
+            <span class="title">Observability — Metrics, Logs, Traces</span>
+            <span class="desc">Ba trụ cột: Metrics (RED/USE), Logs (Serilog, correlation ID), Traces (OpenTelemetry). Prometheus + Grafana.</span>
+            <span class="tags"><span class="tag">observability</span><span class="tag">opentelemetry</span></span>
+        </a>
+
+        <a href="08-memory-and-gc-dotnet.md" class="card">
+            <span class="number">Bài 08</span>
+            <span class="icon">🧠</span>
+            <span class="title">Memory & GC .NET</span>
+            <span class="desc">Stack vs Heap. GC Gen0/1/2. LOH fragmentation. Memory leak (static event, closure, AsyncLocal). Debug với dotnet-counters.</span>
+            <span class="tags"><span class="tag">gc</span><span class="tag">memory</span></span>
+        </a>
+
+        <a href="09-hardware-and-platform-cpu-gpu-ram-os.md" class="card">
+            <span class="number">Bài 09</span>
+            <span class="icon">🏗️</span>
+            <span class="title">Hardware & Platform — CPU, RAM, GPU, OS</span>
+            <span class="desc">i5 vs i7 vs i9 vs Xeon. Tại sao server dùng Linux không phải i9. Cách yêu cầu IT cấu hình server. Khi nào dùng C#, Node, Python.</span>
+            <span class="tags"><span class="tag">hardware</span><span class="tag">devops</span></span>
+        </a>
+
+    </div>
+
+    <!-- Active Recall tip -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>🎯 Mẹo học</th><th></th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Active Recall</strong></td><td>Đọc xong → gấp tài liệu → tự trả lời câu hỏi cuối mỗi bài → bấm &lt;details&gt; xem đáp án.</td></tr>
+                <tr><td><strong>Spaced Repetition</strong></td><td>Ôn lại sau 1 ngày → 3 ngày → 1 tuần → 1 tháng. Dùng câu hỏi quiz để kiểm tra.</td></tr>
+                <tr><td><strong>Feynman</strong></td><td>Giảng lại khái niệm cho người không biết. Nếu không giảng được → chưa hiểu.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-note">
+        <a href="https://github.com/devnpdat/kiro-claude-cursor">📦 GitHub</a> · 
+        <a href="../index.html">🏠 Trang chính</a>
+    </div>
+
+</div>
+</body>
+</html>
