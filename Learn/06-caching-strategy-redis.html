@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 6: Caching Strategy | Phú Đạt Nguyễn</title>
+    <meta name="description" content="Các chiến lược caching với Redis dành cho senior .NET backend engineer: cache-aside, read-through, write-through, write-behind. Phân tích cache invalidation, TTL, và giải pháp chống cache stampede để ">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 6: Caching Strategy">
+    <meta property="og:description" content="Các chiến lược caching với Redis dành cho senior .NET backend engineer: cache-aside, read-through, write-through, write-behind. Phân tích cache invalidation, TTL, và giải pháp chống cache stampede để ">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/06-caching-strategy-redis.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 6: Caching Strategy">
+    <meta name="twitter:description" content="Các chiến lược caching với Redis dành cho senior .NET backend engineer: cache-aside, read-through, write-through, write-behind. Phân tích cache invalidation, TTL, và giải pháp chống cache stampede để ">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/06-caching-strategy-redis.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 6: Caching Strategy",
+  "description": "Các chiến lược caching với Redis dành cho senior .NET backend engineer: cache-aside, read-through, write-through, write-behind. Phân tích cache invalidation, TTL, và giải pháp chống cache stampede để ",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/06-caching-strategy-redis.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-6-caching-strategy-redis-patterns-invalidation-stampede">Bài 6: Caching Strategy — Redis patterns, Invalidation, Stampede</h1>
+<blockquote>
+<p>Dành cho: kỹ sư backend .NET 🔧
+Ngày: 2026-07-10
+Chủ đề: Cache-aside, read-through, write-through, cache invalidation, stampede
+Ẩn dụ xuyên suốt: 🧊 <strong>Tủ đông của quán phở</strong></p>
+</blockquote>
+<hr />
+<h2 id="tong-quan-tai-sao-phai-cache">🎯 Tổng quan — Tại sao phải cache?</h2>
+<p>Quán phở của bạn đông khách. Mỗi lần có khách hỏi "Còn phở không?", bạn chạy vào bếp, mở nồi xem, chạy ra báo. Làm vậy 500 lần/ngày → mệt, chậm.</p>
+<p><strong>Giải pháp</strong>: Chuẩn bị sẵn 1 <strong>tờ giấy ghi số lượng phở còn lại</strong>, treo ở quầy. Khách hỏi → nhìn tờ giấy 1 cái là xong.</p>
+<div class="codehilite"><pre><span></span><code>KHÔNG CACHE:
+Khách ──► Hỏi còn phở? ──► Vào bếp xem ──► Báo ──► 5 giây
+                              ▲
+                              └── Database call (chậm)
+
+CÓ CACHE:
+Khách ──► Hỏi còn phở? ──► Xem tờ giấy ──► Báo ──► 0.1 giây
+                              ▲
+                              └── Redis get (nhanh)
+</code></pre></div>
+
+<p>Cache = lưu <strong>kết quả đã tính toán</strong> để lần sau lấy nhanh hơn.</p>
+<h3 id="khi-nao-nen-cache">Khi nào nên cache?</h3>
+<table>
+<thead>
+<tr>
+<th>Nên cache</th>
+<th>Không nên cache</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dữ liệu đọc nhiều, ghi ít (danh mục, config)</td>
+<td>Dữ liệu thay đổi từng giây (giá cổ phiếu)</td>
+</tr>
+<tr>
+<td>Dữ liệu tốn cost để tính (report, dashboard)</td>
+<td>Dữ liệu nhạy cảm (mật khẩu, token)</td>
+</tr>
+<tr>
+<td>Kết quả aggregation (count, sum, avg)</td>
+<td>Dữ liệu user-specific cá nhân (trừ khi có session cache)</td>
+</tr>
+<tr>
+<td>API response chậm hơn 200ms</td>
+<td>Dữ liệu realtime cần chính xác tuyệt đối</td>
+</tr>
+</tbody>
+</table>
+<h3 id="loi-ich-mang-lai">Lợi ích mang lại</h3>
+<div class="codehilite"><pre><span></span><code>Database:          500 req/s  → 100ms/req → 100% CPU
+Với cache (80% hit): 100 req/s DB + 400 req/s Redis
+                      → 20ms DB + 1ms Redis → 20% CPU
+</code></pre></div>
+
+<hr />
+<h2 id="1-cache-aside-pattern-co-ban-nhat">🧊 1. Cache-Aside — Pattern cơ bản nhất</h2>
+<h3 id="cach-hoat-ong">Cách hoạt động</h3>
+<div class="codehilite"><pre><span></span><code>1. Đọc: Check cache → miss → đọc DB → ghi cache → trả về
+2. Ghi: Ghi DB → xoá cache (hoặc cập nhật)
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>                     ┌──────────┐
+                ┌───►│  Redis   │◄───┐
+                │    └──────────┘    │
+           (1) GET      ▲      (3) SET
+                │       │           │
+                ▼       │           │
+            ┌───────────────┐       │
+            │ Application   ├───────┘
+            └───────────────┘
+                    │  ▲
+            (2) DB  │  │ (4) Trả về
+                    ▼  │
+               ┌──────────┐
+               │  SQL DB  │
+               └──────────┘
+</code></pre></div>
+
+<h3 id="code-net-cache-aside">Code .NET — Cache-Aside</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetOrderAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">orderId</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">$&quot;order:{orderId}&quot;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// 1. Thử cache trước</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">GetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cached</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Cache HIT for {Key}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Deserialize</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;</span><span class="p">(</span><span class="n">cached</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">_logger</span><span class="p">.</span><span class="n">LogInformation</span><span class="p">(</span><span class="s">&quot;Cache MISS for {Key}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">cacheKey</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// 2. Cache miss → query DB</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Orders</span>
+<span class="w">        </span><span class="p">.</span><span class="n">Include</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Items</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">FirstOrDefaultAsync</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Id</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">orderId</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">order</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">null</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// 3. Ghi cache (TTL = 5 phút)</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">serialized</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">MapToDto</span><span class="p">(</span><span class="n">order</span><span class="p">));</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span><span class="n">serialized</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">));</span>
+
+<span class="w">    </span><span class="c1">// 4. Trả về</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nf">MapToDto</span><span class="p">(</span><span class="n">order</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="khi-ghi-du-lieu-xoa-cache-chu-khong-update">Khi ghi dữ liệu — Xoá cache chứ không Update</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Khi update order</span>
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">UpdateOrderAsync</span><span class="p">(</span><span class="n">Order</span><span class="w"> </span><span class="n">order</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// 1. Ghi DB trước</span>
+<span class="w">    </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Orders</span><span class="p">.</span><span class="n">Update</span><span class="p">(</span><span class="n">order</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// 2. Xoá cache — để lần đọc sau tự refresh</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">$&quot;order:{order.Id}&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">RemoveAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// ⚠️ KHÔNG update cache ở đây</span>
+<span class="w">    </span><span class="c1">// Vì update phải serialize đúng DTO → phức tạp, dễ sai</span>
+<span class="w">    </span><span class="c1">// Xoá đi → lần đọc sau tự lấy mới → đơn giản, an toàn</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote>
+<p>🎯 <strong>Rule of thumb</strong>: Ghi DB trước, xoá cache sau — không update cache trực tiếp.</p>
+</blockquote>
+<hr />
+<h2 id="2-cache-invalidation-khi-nao-xoa-cache">🔄 2. Cache Invalidation — Khi nào xoá cache?</h2>
+<h3 id="van-e-stale-data">Vấn đề: Stale Data</h3>
+<p>Dữ liệu trong cache <strong>cũ hơn</strong> dữ liệu trong DB → khách thấy thông tin sai.</p>
+<h3 id="3-cach-invalidation">3 cách invalidation</h3>
+<table>
+<thead>
+<tr>
+<th>Cách</th>
+<th>Cơ chế</th>
+<th>Độ trễ dữ liệu</th>
+<th>Độ phức tạp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TTL (time-to-live)</strong></td>
+<td>Tự động hết hạn sau N phút</td>
+<td>Có thể cũ đến N phút</td>
+<td>Thấp</td>
+</tr>
+<tr>
+<td><strong>Write-through</strong></td>
+<td>Ghi DB + ghi cache cùng lúc</td>
+<td>Gần như realtime</td>
+<td>Trung bình</td>
+</tr>
+<tr>
+<td><strong>Event-driven</strong></td>
+<td>DB change → publish event → xoá cache</td>
+<td>Realtime (vài ms)</td>
+<td>Cao</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a-ttl-on-gian-nhat">a) TTL — Đơn giản nhất</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Cache 5 phút → sau 5 phút tự xoá</span>
+<span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+</code></pre></div>
+
+<blockquote>
+<p>Chọn TTL dựa trên: dữ liệu có thể cũ bao lâu?
+- Danh mục tỉnh/thành: 1 ngày
+- Tồn kho: 1 phút
+- Config: 5 phút</p>
+</blockquote>
+<h3 id="b-write-through-ghi-db-cache">b) Write-Through — Ghi DB + cache</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">UpdateInventoryAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">productId</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">newQuantity</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// 1. Ghi DB</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Products</span><span class="p">.</span><span class="n">FindAsync</span><span class="p">(</span><span class="n">productId</span><span class="p">);</span>
+<span class="w">    </span><span class="n">product</span><span class="p">.</span><span class="n">StockQuantity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newQuantity</span><span class="p">;</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// 2. Ghi cache — CẬP NHẬT luôn (không xoá)</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">$&quot;product:stock:{productId}&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span><span class="n">newQuantity</span><span class="p">.</span><span class="n">ToString</span><span class="p">(),</span><span class="w"> </span>
+<span class="w">        </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Nhược điểm</strong>: Nếu DB ghi thành công, cache ghi thất bại → stale data.</p>
+<h3 id="c-event-driven-khi-co-nhieu-service">c) Event-Driven — Khi có nhiều service</h3>
+<div class="codehilite"><pre><span></span><code>Service A (ghi DB) ──► Kafka ──► Service B (xoá cache)
+                                ──► Service C (xoá cache local)
+</code></pre></div>
+
+<p>Phù hợp microservices, nhiều service cùng dùng 1 cache.</p>
+<hr />
+<h2 id="3-cache-stampede-an-voi-dam-ap">🚨 3. Cache Stampede — Đàn voi dẫm đạp</h2>
+<h3 id="van-e">Vấn đề</h3>
+<p>Cache key <code>order:123</code> hết hạn. 50 request cùng hỏi order 123 cùng lúc:</p>
+<div class="codehilite"><pre><span></span><code>Request 1: Cache MISS → Query DB → Ghi cache → OK (mất 2 giây)
+Request 2: Cache MISS → Query DB → Ghi cache → OK (mất 2 giây)  ← Dư thừa!
+Request 3: Cache MISS → Query DB → Ghi cache → OK (mất 2 giây)  ← Dư thừa!
+...
+Request 50: Cache MISS → Query DB → Ghi cache → OK (mất 2 giây) ← Dư thừa!
+</code></pre></div>
+
+<p>→ <strong>50 query DB giống nhau</strong>, trong khi chỉ cần 1 lần. DB quá tải, có thể sập.</p>
+<h3 id="giai-phap-1-lock-mutex">Giải pháp 1: Lock (Mutex)</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">private</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">SemaphoreSlim</span><span class="w"> </span><span class="n">_lock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetOrderWithLockAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">orderId</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">$&quot;order:{orderId}&quot;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// 1. Check cache (nhanh, không lock)</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">GetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cached</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Deserialize</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;</span><span class="p">(</span><span class="n">cached</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// 2. Cache miss → lock để chỉ 1 request query DB</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_lock</span><span class="p">.</span><span class="n">WaitAsync</span><span class="p">();</span>
+<span class="w">    </span><span class="k">try</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Double-check: có thể request khác đã ghi cache rồi</span>
+<span class="w">        </span><span class="n">cached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">GetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cached</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">Deserialize</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;</span><span class="p">(</span><span class="n">cached</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Thực sự miss → query DB</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Orders</span><span class="p">.</span><span class="n">FindAsync</span><span class="p">(</span><span class="n">orderId</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span><span class="n">Serialize</span><span class="p">(</span><span class="n">MapToDto</span><span class="p">(</span><span class="n">order</span><span class="p">)),</span>
+<span class="w">            </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nf">MapToDto</span><span class="p">(</span><span class="n">order</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">finally</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_lock</span><span class="p">.</span><span class="n">Release</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="giai-phap-2-early-expiry-background-refresh">Giải pháp 2: Early Expiry + Background Refresh</h3>
+<p>Set TTL = 5 phút, nhưng refresh ở phút thứ 4:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetOrderSmartAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">orderId</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">$&quot;order:{orderId}&quot;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">GetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cached</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Miss → load từ DB</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nf">LoadAndCacheOrderAsync</span><span class="p">(</span><span class="n">orderId</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Parse metadata từ cache value</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Deserialize</span><span class="o">&lt;</span><span class="n">CacheEntry</span><span class="o">&lt;</span><span class="n">OrderDto</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">cached</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Nếu cache sắp hết hạn (&lt; 20% TTL còn lại) → refresh background</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">entry</span><span class="p">.</span><span class="n">RemainingLifePercent</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mf">0.2</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">Run</span><span class="p">(()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">RefreshOrderCacheAsync</span><span class="p">(</span><span class="n">orderId</span><span class="p">));</span>
+<span class="w">        </span><span class="c1">// Trả về entry cũ, khách không phải chờ</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">entry</span><span class="p">.</span><span class="n">Data</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">private</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">RefreshOrderCacheAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">orderId</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">try</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Orders</span><span class="p">.</span><span class="n">FindAsync</span><span class="p">(</span><span class="n">orderId</span><span class="p">);</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="s">$&quot;order:{orderId}&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">Serialize</span><span class="p">(</span><span class="n">MapToDto</span><span class="p">(</span><span class="n">order</span><span class="p">)),</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">ex</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">_logger</span><span class="p">.</span><span class="n">LogWarning</span><span class="p">(</span><span class="n">ex</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Background refresh failed for order {Id}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">orderId</span><span class="p">);</span>
+<span class="w">        </span><span class="c1">// Cache cũ vẫn còn, TTL chưa hết → không sao</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="giai-phap-3-set-ttl-ngau-nhien">Giải pháp 3: Set TTL ngẫu nhiên</h3>
+<p>Thay vì tất cả key cùng hết hạn lúc 5 phút → thêm random:</p>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">ttl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromSeconds</span><span class="p">(</span><span class="n">Random</span><span class="p">.</span><span class="n">Shared</span><span class="p">.</span><span class="n">Next</span><span class="p">(</span><span class="mi">60</span><span class="p">));</span>
+<span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="k">value</span><span class="p">,</span><span class="w"> </span><span class="n">ttl</span><span class="p">);</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-redis-data-structures-dung-cai-nao">🏗️ 4. Redis Data Structures — Dùng cái nào?</h2>
+<h3 id="string-cache-on-gian">String — Cache đơn giản</h3>
+<div class="codehilite"><pre><span></span><code>SET<span class="w"> </span>order:123<span class="w"> </span><span class="s2">&quot;{...}&quot;</span><span class="w"> </span>EX<span class="w"> </span><span class="m">300</span>
+GET<span class="w"> </span>order:123
+</code></pre></div>
+
+<p>Dùng cho: cache object, session, counters.</p>
+<h3 id="hash-object-co-field">Hash — Object có field</h3>
+<div class="codehilite"><pre><span></span><code>HSET<span class="w"> </span>user:456<span class="w"> </span>name<span class="w"> </span><span class="s2">&quot;Anh Đạt&quot;</span><span class="w"> </span>role<span class="w"> </span><span class="s2">&quot;TechLead&quot;</span><span class="w"> </span>team<span class="w"> </span><span class="s2">&quot;ReturnHome&quot;</span>
+HGET<span class="w"> </span>user:456<span class="w"> </span>name
+HGETALL<span class="w"> </span>user:456
+</code></pre></div>
+
+<p>Dùng cho: lư/tra cứu field riêng lẻ của 1 object.</p>
+<h3 id="list-queue-timeline">List — Queue / Timeline</h3>
+<div class="codehilite"><pre><span></span><code>LPUSH<span class="w"> </span>notifications:789<span class="w"> </span><span class="s2">&quot;Đơn hàng mới&quot;</span><span class="w"> </span><span class="s2">&quot;Thanh toán thành công&quot;</span>
+LRANGE<span class="w"> </span>notifications:789<span class="w"> </span><span class="m">0</span><span class="w"> </span>-1<span class="w">  </span><span class="c1"># Lấy tất cả</span>
+</code></pre></div>
+
+<p>Dùng cho: hàng đợi tạm, feed gần đây.</p>
+<h3 id="set-danh-sach-khong-trung">Set — Danh sách không trùng</h3>
+<div class="codehilite"><pre><span></span><code>SADD<span class="w"> </span>active_users<span class="w"> </span><span class="s2">&quot;user1&quot;</span><span class="w"> </span><span class="s2">&quot;user2&quot;</span><span class="w"> </span><span class="s2">&quot;user3&quot;</span>
+SISMEMBER<span class="w"> </span>active_users<span class="w"> </span><span class="s2">&quot;user1&quot;</span><span class="w">  </span><span class="c1"># → 1 (có)</span>
+SMEMBERS<span class="w"> </span>active_users
+</code></pre></div>
+
+<p>Dùng cho: online users, tags, permission sets.</p>
+<h3 id="sorted-set-leaderboard-priority">Sorted Set — Leaderboard / Priority</h3>
+<div class="codehilite"><pre><span></span><code>ZADD<span class="w"> </span>leaderboard<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="s2">&quot;user1&quot;</span><span class="w"> </span><span class="m">85</span><span class="w"> </span><span class="s2">&quot;user2&quot;</span><span class="w">   </span><span class="c1"># score = điểm</span>
+ZREVRANGE<span class="w"> </span>leaderboard<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w">                  </span><span class="c1"># Top 3</span>
+</code></pre></div>
+
+<p>Dùng cho: xếp hạng, rate limiting (timestamp làm score).</p>
+<hr />
+<h2 id="5-cache-trong-ung-dung-ap-dung-the-nao">🎯 5. Cache trong ứng dụng — Áp dụng thế nào?</h2>
+<h3 id="cache-danh-muc-it-thay-oi">Cache danh mục (ít thay đổi)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Cache danh sách sản phẩm — TTL 1 giờ</span>
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">ProductDto</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">GetProductsAsync</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;products:all&quot;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">GetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cached</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Deserialize</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">ProductDto</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">cached</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">products</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Products</span>
+<span class="w">        </span><span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">p</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ProductDto</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">})</span>
+<span class="w">        </span><span class="p">.</span><span class="n">ToListAsync</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">products</span><span class="p">),</span>
+<span class="w">        </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromHours</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">products</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="cache-lookup-value-tien-loai-hang">Cache lookup value (tiền, loại hàng)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Cache từng product riêng lẻ</span>
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">ProductDto</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetProductAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">productId</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cacheKey</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">$&quot;product:{productId}&quot;</span><span class="p">;</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">cached</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">GetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">cached</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Deserialize</span><span class="o">&lt;</span><span class="n">ProductDto</span><span class="o">&gt;</span><span class="p">(</span><span class="n">cached</span><span class="p">);</span>
+
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Products</span><span class="p">.</span><span class="n">FindAsync</span><span class="p">(</span><span class="n">productId</span><span class="p">);</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">product</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">null</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">null</span><span class="p">;</span>
+
+<span class="w">    </span><span class="c1">// TTL ngắn cho dữ liệu có thể thay đổi (giá, tồn kho)</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">SetStringAsync</span><span class="p">(</span><span class="n">cacheKey</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="n">MapToDto</span><span class="p">(</span><span class="n">product</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">TimeSpan</span><span class="p">.</span><span class="n">FromMinutes</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nf">MapToDto</span><span class="p">(</span><span class="n">product</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="xoa-cache-khi-co-thay-oi">Xoá cache khi có thay đổi</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">UpdateProductAsync</span><span class="p">(</span><span class="n">Product</span><span class="w"> </span><span class="n">product</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">Products</span><span class="p">.</span><span class="n">Update</span><span class="p">(</span><span class="n">product</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_dbContext</span><span class="p">.</span><span class="n">SaveChangesAsync</span><span class="p">();</span>
+
+<span class="w">    </span><span class="c1">// Xoá cache của product này + cache danh sách</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">RemoveAsync</span><span class="p">(</span><span class="s">$&quot;product:{product.Id}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_cache</span><span class="p">.</span><span class="n">RemoveAsync</span><span class="p">(</span><span class="s">&quot;products:all&quot;</span><span class="p">);</span><span class="w">  </span><span class="c1">// Danh sách cũng cần xoá</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-monitoring-cache">📊 6. Monitoring Cache</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Ý nghĩa</th>
+<th>Tốt</th>
+<th>Xấu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cache Hit Ratio</strong></td>
+<td>% request được serve từ cache</td>
+<td>&gt; 80%</td>
+<td>&lt; 50%</td>
+</tr>
+<tr>
+<td><strong>Cache Miss Ratio</strong></td>
+<td>% request phải query DB</td>
+<td>&lt; 20%</td>
+<td>&gt; 50%</td>
+</tr>
+<tr>
+<td><strong>Evicted Keys</strong></td>
+<td>Số key bị đá ra do đầy memory</td>
+<td>0</td>
+<td>&gt; 0</td>
+</tr>
+<tr>
+<td><strong>Expired Keys</strong></td>
+<td>Key hết hạn tự nhiên</td>
+<td>Bình thường</td>
+<td>Bất thường</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cách xem trên Redis:</strong></p>
+<div class="codehilite"><pre><span></span><code>redis-cli<span class="w"> </span>INFO<span class="w"> </span>stats
+<span class="c1"># cache_hits: 45000</span>
+<span class="c1"># cache_misses: 5000</span>
+<span class="c1"># Hit ratio = 45000 / (45000 + 5000) = 90% ✅</span>
+
+redis-cli<span class="w"> </span>INFO<span class="w"> </span>memory
+<span class="c1"># used_memory_human: 256MB</span>
+<span class="c1"># evicted_keys: 0  ← Nếu &gt; 0 là đang thiếu RAM cho Redis</span>
+</code></pre></div>
+
+<hr />
+<h2 id="tong-ket-checklist-cache">✅ Tổng kết — Checklist Cache</h2>
+<table>
+<thead>
+<tr>
+<th>Việc</th>
+<th>Nên làm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cache-Aside</td>
+<td>Pattern cơ bản — thử cache → miss → DB</td>
+</tr>
+<tr>
+<td>TTL</td>
+<td>Luôn set TTL — không có cache vĩnh viễn</td>
+</tr>
+<tr>
+<td>Xoá cache khi ghi DB</td>
+<td>Remove key → lần đọc sau tự refresh</td>
+</tr>
+<tr>
+<td>Cache Stampede</td>
+<td>Dùng lock hoặc early refresh</td>
+</tr>
+<tr>
+<td>Hit ratio</td>
+<td>Monitor, &gt; 80% là tốt</td>
+</tr>
+<tr>
+<td>Set TTL ngẫu nhiên</td>
+<td>Tránh tất cả key hết hạn cùng lúc</td>
+</tr>
+<tr>
+<td>Redis memory</td>
+<td>Set <code>maxmemory</code> + <code>allkeys-lru</code> policy</td>
+</tr>
+<tr>
+<td>Không cache sensitive data</td>
+<td>Password, token, PII</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="active-recall-kiem-tra-tri-nho">🧪 Active Recall — Kiểm tra trí nhớ</h2>
+<details>
+<summary><strong>1️⃣ Cache-Aside hoạt động thế nào?</strong></summary>
+
+1. Check cache. 2. Nếu HIT → trả về. 3. Nếu MISS → query DB → ghi cache → trả về. Khi ghi DB → xoá cache.
+</details>
+
+<details>
+<summary><strong>2️⃣ Khi update DB, nên update cache hay xoá cache?</strong></summary>
+
+**Xoá cache**. Vì update cache phải đúng format DTO, sync giữa DB và cache dễ fail. Xoá đi → lần đọc sau tự lấy lại → đơn giản, an toàn.
+</details>
+
+<details>
+<summary><strong>3️⃣ Cache Stampede là gì?</strong></summary>
+
+Nhiều request cùng hit cache MISS → cùng query DB → DB quá tải. Xảy ra khi cache key vừa hết hạn.
+</details>
+
+<details>
+<summary><strong>4️⃣ 3 cách chống Cache Stampede?</strong></summary>
+
+1. Lock (chỉ 1 request query DB, các request khác chờ). 2. Early expiry (refresh cache trước khi hết hạn). 3. Random TTL (tránh key cùng lúc hết hạn).
+</details>
+
+<details>
+<summary><strong>5️⃣ Khi nào dùng Redis Hash thay vì String?</strong></summary>
+
+Khi cần đọc/ghi field riêng lẻ của object (VD: chỉ update 1 field của user profile). Dùng Hash → tiết kiệm bandwidth hơn String vì không cần get/set cả object.
+</details>
+
+<details>
+<summary><strong>6️⃣ Cache hit ratio 30% có nghĩa gì?</strong></summary>
+
+70% request vào thẳng DB → cache không hiệu quả. Cần xem lại: TTL quá ngắn? Key không đúng? Data ít được đọc lại?
+</details>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>

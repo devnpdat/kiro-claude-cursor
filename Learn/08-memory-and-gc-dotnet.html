@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 8: Memory & GC trong .NET | Phú Đạt Nguyễn</title>
+    <meta name="description" content="Hiểu sâu về quản lý bộ nhớ .NET dành cho senior .NET backend engineer: phân biệt Stack và Heap, cơ chế GC Generations (Gen0/1/2), Large Object Heap, memory leak thường gặp, và cách implement IDisposab">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 8: Memory & GC trong .NET">
+    <meta property="og:description" content="Hiểu sâu về quản lý bộ nhớ .NET dành cho senior .NET backend engineer: phân biệt Stack và Heap, cơ chế GC Generations (Gen0/1/2), Large Object Heap, memory leak thường gặp, và cách implement IDisposab">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/08-memory-and-gc-dotnet.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 8: Memory & GC trong .NET">
+    <meta name="twitter:description" content="Hiểu sâu về quản lý bộ nhớ .NET dành cho senior .NET backend engineer: phân biệt Stack và Heap, cơ chế GC Generations (Gen0/1/2), Large Object Heap, memory leak thường gặp, và cách implement IDisposab">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/08-memory-and-gc-dotnet.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 8: Memory & GC trong .NET",
+  "description": "Hiểu sâu về quản lý bộ nhớ .NET dành cho senior .NET backend engineer: phân biệt Stack và Heap, cơ chế GC Generations (Gen0/1/2), Large Object Heap, memory leak thường gặp, và cách implement IDisposab",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/08-memory-and-gc-dotnet.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-8-memory-gc-trong-net-stack-vs-heap-generations-memory-leak">Bài 8: Memory &amp; GC trong .NET — Stack vs Heap, Generations, Memory Leak</h1>
+<blockquote>
+<p>Dành cho: kỹ sư backend .NET 🔧
+Ngày: 2026-07-10
+Chủ đề: Stack, Heap, GC Generations (Gen0/1/2), LOH, memory leak, IDisposable
+Ẩn dụ xuyên suốt: 🗑️ <strong>Bãi đậu xe + đội dọn vệ sinh</strong>
+Thời gian đọc: ~20 phút</p>
+</blockquote>
+<hr />
+<h2 id="tong-quan-bo-nho-khong-phai-la-vo-han">🎯 Tổng quan — "Bộ nhớ không phải là vô hạn"</h2>
+<p>Bạn viết code, tạo object, rồi... quên nó. Nếu không có ai dọn, bộ nhớ sẽ đầy và ứng dụng crash.</p>
+<p><strong>.NET có GC (Garbage Collector) tự động dọn</strong> — nhưng nếu bạn không hiểu GC hoạt động thế nào, bạn sẽ:
+- Tạo ra object không cần thiết → GC chạy liên tục → CPU tốn, app chậm.
+- Giữ reference không giải phóng → memory leak → app chết sau vài ngày.
+- Lưu object lớn vào sai chỗ → LOH fragmentation → app crash vì OutOfMemory.</p>
+<blockquote>
+<p><strong>Mục tiêu bài này:</strong> Hiểu cách bộ nhớ .NET hoạt động để viết code <strong>ít tạo garbage</strong>, <strong>tránh memory leak</strong>, và <strong>debug được memory issue</strong> khi nó xảy ra.</p>
+</blockquote>
+<hr />
+<h2 id="1-stack-vs-heap-hai-khu-vuc-bo-nho">🏗️ 1. Stack vs Heap — Hai khu vực bộ nhớ</h2>
+<p>Hãy tưởng tượng bộ nhớ là một <strong>khu đất</strong>:</p>
+<h3 id="stack-ngan-xep-tu-o-ca-nhan">Stack (Ngăn xếp) — Tủ đồ cá nhân</h3>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────┐
+│     Stack           │
+├─────────────────────┤
+│ Main()              │ ← method đang chạy
+│   ├─ int x = 5      │
+│   └─ int y = 10     │
+├─────────────────────┤
+│ ProcessOrder()      │
+│   ├─ int orderId    │
+│   └─ long amount    │
+├─────────────────────┤
+│ Validate()           │
+│   ├─ bool isValid   │
+│   └─ string str     │ ← đây là REFERENCE, giá trị ở Heap
+└─────────────────────┘
+</code></pre></div>
+
+<p><strong>Đặc điểm Stack:</strong>
+- Mỗi thread có <strong>1 Stack riêng</strong>.
+- Dữ liệu được push/pop theo LIFO (Last In First Out).
+- <strong>Tự động dọn</strong> khi method kết thúc — không cần GC.
+- Kích thước nhỏ: mặc định ~1MB/thread (.NET).
+- Chỉ chứa: <strong>value types</strong> (<code>int</code>, <code>long</code>, <code>bool</code>, <code>struct</code>, <code>enum</code>) và <strong>references</strong> (con trỏ đến object ở Heap).</p>
+<h3 id="heap-ong-bai-au-xe-cong-cong">Heap (Đống) — Bãi đậu xe công cộng</h3>
+<div class="codehilite"><pre><span></span><code>Heap
+┌──────────────────────────────────────┐
+│ Gen0: xe đỗ tạm thời (object mới)    │
+│   ├─ Order{Id=1, Amount=500000}      │
+│   ├─ string &quot;hello&quot;                  │
+│   └─ List&lt;int&gt;(capacity=4)           │
+├──────────────────────────────────────┤
+│ Gen1: xe đỗ lâu hơn                  │
+│   └─ DbConnection pool               │
+├──────────────────────────────────────┤
+│ Gen2: xe đỗ vĩnh viễn                │
+│   ├─ Static config                   │
+│   └─ Singleton services              │
+├──────────────────────────────────────┤
+│ LOH (Large Object Heap): xe tải      │
+│   └─ byte[85000]                     │
+└──────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Đặc điểm Heap:</strong>
+- <strong>Tất cả thread chia sẻ</strong> 1 Heap.
+- Chứa: <strong>reference types</strong> (<code>class</code>, <code>string</code>, <code>array</code>, <code>delegate</code>, <code>List&lt;T&gt;</code>...).
+- Không tự động dọn — <strong>GC phải chạy</strong> để dọn.
+- Kích thước lớn (có thể GB).
+- Tốn kém hơn Stack: allocation + GC collection.</p>
+<h3 id="quy-tac-vang">Quy tắc vàng:</h3>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Lưu ở đâu?</th>
+<th>Ai dọn?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>int</code>, <code>long</code>, <code>bool</code>, <code>struct</code>, <code>enum</code></td>
+<td><strong>Stack</strong> (hoặc inline trong object nếu là field của class)</td>
+<td>Tự động khi ra khỏi scope</td>
+</tr>
+<tr>
+<td><code>class</code>, <code>string</code>, <code>array</code>, <code>delegate</code>, <code>interface</code></td>
+<td><strong>Heap</strong></td>
+<td><strong>GC</strong></td>
+</tr>
+<tr>
+<td><code>record</code></td>
+<td><strong>Heap</strong> (dù có vẻ như value type)</td>
+<td><strong>GC</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Nhiều dev mới hiểu sai:</strong> <code>struct</code> luôn ở stack? <strong>Không hẳn.</strong> Nếu struct là field của 1 <code>class</code>, thì struct đó nằm <strong>trong Heap</strong> (vì nó là 1 phần của object trên Heap).</p>
+</blockquote>
+<hr />
+<h2 id="2-gc-garbage-collector-hoat-ong-the-nao">♻️ 2. GC — Garbage Collector hoạt động thế nào?</h2>
+<p>GC không phải chạy liên tục. Nó chỉ chạy khi:
+1. <strong>Gen0 đầy</strong> (thường ~256KB-4MB tuỳ mode).
+2. <strong>Hệ thống báo memory pressure</strong> (sắp hết RAM, Windows gửi signal).
+3. Bạn gọi <strong><code>GC.Collect()</code></strong> — nhưng <strong>đừng làm vậy trừ khi bạn thực sự hiểu</strong>.</p>
+<h3 id="21-3-generations-phan-loai-rac">2.1. 3 Generations — Phân loại rác</h3>
+<p>Ý tưởng thiên tài của GC: <strong>Object trẻ chết nhanh, object già sống lâu.</strong></p>
+<blockquote>
+<p><strong>Weak Generational Hypothesis:</strong> 80-90% object mới tạo ra sẽ không còn được dùng đến sau vài mili giây.</p>
+</blockquote>
+<p>Dựa trên đó, GC chia Heap làm 3 "thế hệ":</p>
+<table>
+<thead>
+<tr>
+<th>Gen</th>
+<th>Ai ở đó?</th>
+<th>Kích thước</th>
+<th>Tần suất GC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gen0</strong></td>
+<td>Object mới tạo</td>
+<td>Nhỏ (~256KB-2MB)</td>
+<td><strong>Rất thường xuyên</strong> (cứ vài trăm ms)</td>
+</tr>
+<tr>
+<td><strong>Gen1</strong></td>
+<td>Object sống sót sau 1 lần GC</td>
+<td>Trung bình</td>
+<td>Thường</td>
+</tr>
+<tr>
+<td><strong>Gen2</strong></td>
+<td>Object sống sót sau 2+ lần GC</td>
+<td>Lớn nhất</td>
+<td><strong>Rất hiếm</strong> (có thể vài phút)</td>
+</tr>
+<tr>
+<td><strong>LOH</strong></td>
+<td>Object &gt;= 85KB</td>
+<td>Tuỳ ý</td>
+<td>Khi cần (không theo Gen)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22-gc-dien-ra-the-nao">2.2. GC diễn ra thế nào?</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">Before</span><span class="w"> </span><span class="nl">GC</span><span class="p">:</span>
+<span class="nl">Gen0</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">A</span><span class="o">][</span><span class="n">B</span><span class="o">][</span><span class="n">C</span><span class="o">][</span><span class="n">D</span><span class="o">][</span><span class="n">E</span><span class="o">][</span><span class="n">F</span><span class="o">]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">Gen0</span><span class="w"> </span><span class="n">đầy</span>
+<span class="nl">Gen1</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">X</span><span class="o">][</span><span class="n">Y</span><span class="o">]</span><span class="w"> </span>
+<span class="nl">Gen2</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">StaticConfig</span><span class="o">][</span><span class="n">SingletonService</span><span class="o">]</span>
+
+<span class="n">GC</span><span class="w"> </span><span class="n">diễn</span><span class="w"> </span><span class="n">ra</span><span class="w"> </span><span class="p">(</span><span class="n">Gen0</span><span class="w"> </span><span class="n">collection</span><span class="p">)</span><span class="err">:</span>
+<span class="mf">1.</span><span class="w"> </span><span class="n">Duyệt</span><span class="w"> </span><span class="n">từ</span><span class="w"> </span><span class="n">ROOT</span><span class="w"> </span><span class="p">(</span><span class="k">static</span><span class="p">,</span><span class="w"> </span><span class="n">stack</span><span class="p">,</span><span class="w"> </span><span class="n">register</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">tìm</span><span class="w"> </span><span class="k">object</span><span class="w"> </span><span class="n">còn</span><span class="w"> </span><span class="n">được</span><span class="w"> </span><span class="n">tham</span><span class="w"> </span><span class="n">chiếu</span><span class="p">.</span>
+<span class="mf">2.</span><span class="w"> </span><span class="nl">C</span><span class="p">:</span><span class="w"> </span><span class="n">không</span><span class="w"> </span><span class="n">ai</span><span class="w"> </span><span class="n">dùng</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">BỎ</span><span class="w"> </span><span class="p">(</span><span class="n">rác</span><span class="p">).</span>
+<span class="mf">3.</span><span class="w"> </span><span class="nl">E</span><span class="p">:</span><span class="w"> </span><span class="n">được</span><span class="w"> </span><span class="n">dùng</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">MOVE</span><span class="w"> </span><span class="n">lên</span><span class="w"> </span><span class="n">Gen1</span><span class="p">.</span>
+<span class="mf">4.</span><span class="w"> </span><span class="nl">F</span><span class="p">:</span><span class="w"> </span><span class="n">không</span><span class="w"> </span><span class="n">ai</span><span class="w"> </span><span class="n">dùng</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">BỎ</span><span class="p">.</span>
+<span class="mf">5.</span><span class="w"> </span><span class="n">Nén</span><span class="w"> </span><span class="p">(</span><span class="n">compact</span><span class="p">)</span><span class="w"> </span><span class="n">Gen0</span><span class="w"> </span><span class="n">để</span><span class="w"> </span><span class="n">không</span><span class="w"> </span><span class="n">còn</span><span class="w"> </span><span class="n">lỗ</span><span class="w"> </span><span class="n">hổng</span><span class="p">.</span>
+
+<span class="k">After</span><span class="w"> </span><span class="n">GC</span><span class="w"> </span><span class="p">(</span><span class="n">Gen0</span><span class="w"> </span><span class="n">collection</span><span class="p">)</span><span class="err">:</span>
+<span class="nl">Gen0</span><span class="p">:</span><span class="w"> </span><span class="err">[]</span><span class="w"> </span><span class="err">←</span><span class="w"> </span><span class="n">trống</span>
+<span class="nl">Gen1</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">X</span><span class="o">][</span><span class="n">Y</span><span class="o">][</span><span class="n">E</span><span class="o">]</span>
+<span class="nl">Gen2</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">StaticConfig</span><span class="o">][</span><span class="n">SingletonService</span><span class="o">]</span>
+</code></pre></div>
+
+<h3 id="23-gc-collection-types">2.3. GC Collection types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Dọn Gen nào?</th>
+<th>Tốc độ</th>
+<th>Ảnh hưởng</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Gen0</strong></td>
+<td>Gen0</td>
+<td>Nhanh (~1ms)</td>
+<td>Hầu như không ảnh hưởng</td>
+</tr>
+<tr>
+<td><strong>Gen1</strong></td>
+<td>Gen0 + Gen1</td>
+<td>Trung bình (~5-10ms)</td>
+<td>Có thể thấy latency nhỏ</td>
+</tr>
+<tr>
+<td><strong>Gen2</strong></td>
+<td>Gen0 + Gen1 + Gen2</td>
+<td><strong>Chậm (~50-200ms)</strong></td>
+<td><strong>App bị "đứng" (pause)</strong></td>
+</tr>
+<tr>
+<td><strong>Full</strong></td>
+<td>Gen0 + Gen1 + Gen2 + LOH</td>
+<td><strong>Rất chậm (~100-500ms)</strong></td>
+<td><strong>Thảm hoạ cho real-time</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="24-gc-mode-workstation-vs-server">2.4. GC Mode — Workstation vs Server</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Workstation (mặc định)</th>
+<th>Server</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dùng cho</td>
+<td>Desktop app, service nhỏ</td>
+<td><strong>Backend API, service lớn</strong></td>
+</tr>
+<tr>
+<td>Thread GC</td>
+<td>1 thread</td>
+<td>1 thread/core</td>
+</tr>
+<tr>
+<td>Priority</td>
+<td>Bình thường</td>
+<td>Cao</td>
+</tr>
+<tr>
+<td>Phù hợp</td>
+<td>UI-responsive</td>
+<td><strong>Throughput cao</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="cm">&lt;!-- .csproj — bật Server GC --&gt;</span>
+<span class="nt">&lt;PropertyGroup&gt;</span>
+<span class="w">  </span><span class="nt">&lt;ServerGarbageCollection&gt;</span>true<span class="nt">&lt;/ServerGarbageCollection&gt;</span>
+<span class="nt">&lt;/PropertyGroup&gt;</span>
+</code></pre></div>
+
+<p>Hoặc trong <code>runtimeconfig.json</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;runtimeOptions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;configProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;System.GC.Server&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Khuyến nghị:</strong> API backend .NET LUÔN bật Server GC. Workstation GC chỉ nên cho desktop app.</p>
+</blockquote>
+<hr />
+<h2 id="3-loh-large-object-heap-object-lon-la-van-e-ac-biet">📦 3. LOH (Large Object Heap) — Object lớn là vấn đề đặc biệt</h2>
+<p>Object &gt;= <strong>85KB</strong> được đặt vào <strong>LOH</strong> thay vì Gen0/1/2.</p>
+<p><strong>Tại sao có LOH riêng?</strong> Vì compact (nén) object lớn rất tốn kém — phải copy cả đống bytes.</p>
+<p><strong>Hậu quả:</strong> LOH <strong>không được compact</strong> (mặc định). Sau một thời gian:</p>
+<div class="codehilite"><pre><span></span><code>LOH: [byte[100KB]][   free   ][byte[50KB]][   free   ][byte[200KB]]
+</code></pre></div>
+
+<p>Các lỗ hổng (free) nhỏ lẻ → không đủ chỗ cho object lớn mới → <strong>OutOfMemory ngay cả khi tổng RAM còn nhiều</strong>.</p>
+<p>Đây gọi là <strong>LOH fragmentation</strong>.</p>
+<h3 id="cach-tranh-loh-fragmentation">Cách tránh LOH fragmentation:</h3>
+<ol>
+<li><strong>Dùng mảng có kích thước cố định</strong> (pooling).</li>
+<li><strong>ArrayPool<T></strong> — tái sử dụng mảng lớn thay vì tạo mới.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ Xấu: tạo mới mỗi lần, gây LOH fragmentation</span>
+<span class="kt">byte</span><span class="p">[]</span><span class="w"> </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">byte</span><span class="p">[</span><span class="mi">100</span><span class="n">_000</span><span class="p">];</span>
+<span class="c1">// xử lý...</span>
+<span class="c1">// Quên không dùng nữa → object rác trên LOH</span>
+
+<span class="c1">// ✅ Tốt: dùng ArrayPool, tái sử dụng</span>
+<span class="kt">byte</span><span class="p">[]</span><span class="w"> </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ArrayPool</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">&gt;</span><span class="p">.</span><span class="n">Shared</span><span class="p">.</span><span class="n">Rent</span><span class="p">(</span><span class="mi">100</span><span class="n">_000</span><span class="p">);</span>
+<span class="k">try</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// xử lý...</span>
+<span class="p">}</span>
+<span class="k">finally</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ArrayPool</span><span class="o">&lt;</span><span class="kt">byte</span><span class="o">&gt;</span><span class="p">.</span><span class="n">Shared</span><span class="p">.</span><span class="n">Return</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<ol>
+<li><strong>Bật LOH compaction</strong> (từ .NET 5+):</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;runtimeOptions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;configProperties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;System.GC.LargeObjectHeapCompactionMode&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>⚠️ LOH compaction chậm. Chỉ bật nếu bạn thực sự bị fragmentation.</p>
+<hr />
+<h2 id="4-memory-leak-trong-net-ro-ri-the-nao-khi-a-co-gc">💧 4. Memory Leak trong .NET — "Rò rỉ" thế nào khi đã có GC?</h2>
+<p>Nhiều người nghĩ: ".NET có GC tự động → không thể memory leak". <strong>SAI TO.</strong></p>
+<p>GC chỉ dọn object <strong>không còn được tham chiếu</strong> (unreachable). Nếu bạn <strong>vô tình giữ reference</strong> đến object, GC không bao giờ dọn nó.</p>
+<p>Đây là <strong>memory leak .NET</strong> — không leak theo kiểu C/C++ (quên free), mà leak bằng cách <strong>giữ object sống mãi</strong>.</p>
+<h3 id="41-static-event-ke-giet-nguoi-tham-lang-nhat">4.1. Static event — Kẻ giết người thầm lặng NHẤT</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ Memory leak kinh điển!</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">OrderService</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">Subscribe</span><span class="p">()</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Static event! OrderEventEmitter sống mãi → subscriber không bao giờ được GC</span>
+<span class="w">        </span><span class="n">OrderEventEmitter</span><span class="p">.</span><span class="n">OnOrderCreated</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">HandleOrderCreated</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">HandleOrderCreated</span><span class="p">(</span><span class="kt">object</span><span class="w"> </span><span class="n">sender</span><span class="p">,</span><span class="w"> </span><span class="n">OrderEventArgs</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// xử lý...</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// OrderEventEmitter giữ reference đến OrderService.HandleOrderCreated</span>
+<span class="c1">// → OrderService không bao giờ được GC → memory leak</span>
+</code></pre></div>
+
+<p><strong>Giải pháp:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ✅ Luôn unsubscribe khi không cần</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">OrderService</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">IDisposable</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">Subscribe</span><span class="p">()</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">OrderEventEmitter</span><span class="p">.</span><span class="n">OnOrderCreated</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">HandleOrderCreated</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">Dispose</span><span class="p">()</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">OrderEventEmitter</span><span class="p">.</span><span class="n">OnOrderCreated</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">HandleOrderCreated</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="42-captured-variable-trong-lambdaclosure">4.2. Captured variable trong Lambda/Closure</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ Closure giữ reference</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">ReportGenerator</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">private</span><span class="w"> </span><span class="kt">byte</span><span class="p">[]</span><span class="w"> </span><span class="n">_hugeReportData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">byte</span><span class="p">[</span><span class="mi">100</span><span class="n">_000_000</span><span class="p">];</span><span class="w"> </span><span class="c1">// 100MB</span>
+
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Func</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetReportSummary</span><span class="p">()</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Lambda capture _hugeReportData → nó không bao giờ được GC</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">$&quot;Report size: {_hugeReportData.Length} bytes&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Giải pháp:</strong> Capture đúng cái cần, đừng capture cả object.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">public</span><span class="w"> </span><span class="n">Func</span><span class="o">&lt;</span><span class="kt">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">GetReportSummary</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_hugeReportData</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span><span class="w"> </span><span class="c1">// capture int, không capture cả object</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">$&quot;Report size: {size} bytes&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="43-thread-local-storage-asynclocal">4.3. Thread local storage / AsyncLocal</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ AsyncLocal có thể leak nếu không clear</span>
+<span class="k">private</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">AsyncLocal</span><span class="o">&lt;</span><span class="kt">byte</span><span class="p">[]</span><span class="o">&gt;</span><span class="w"> </span><span class="n">_context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="nf">ProcessAsync</span><span class="p">()</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">_context</span><span class="p">.</span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="kt">byte</span><span class="p">[</span><span class="mi">100</span><span class="n">_000_000</span><span class="p">];</span><span class="w"> </span><span class="c1">// 100MB</span>
+<span class="w">    </span><span class="c1">// ... await ...</span>
+<span class="w">    </span><span class="c1">// Quên không clear → _context giữ reference đến 100MB mãi mãi</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Giải pháp:</strong> Luôn <code>Dispose</code> hoặc clear sau khi dùng.</p>
+<h3 id="44-collection-tang-vo-han-concurrentdictionary-list-static">4.4. Collection tăng vô hạn (ConcurrentDictionary, List static)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ ConcurrentDictionary không có cơ chế cleanup</span>
+<span class="k">private</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="n">ConcurrentDictionary</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="kt">byte</span><span class="p">[]</span><span class="o">&gt;</span><span class="w"> </span><span class="n">_cache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">();</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">AddToCache</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="kt">byte</span><span class="p">[]</span><span class="w"> </span><span class="n">data</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">_cache</span><span class="p">[</span><span class="n">id</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"> </span><span class="c1">// Không bao giờ remove → memory tăng mãi</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Giải pháp:</strong> Dùng <code>MemoryCache</code> có eviction policy, hoặc tự cleanup định kỳ.</p>
+<h3 id="45-debugging-memory-leak-cong-cu">4.5. Debugging memory leak — Công cụ</h3>
+<table>
+<thead>
+<tr>
+<th>Công cụ</th>
+<th>Dùng để</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>dotnet-counters</strong></td>
+<td>Monitor memory real-time</td>
+</tr>
+<tr>
+<td><strong>dotnet-dump</strong></td>
+<td>Lấy dump process</td>
+</tr>
+<tr>
+<td><strong>dotnet-gcdump</strong></td>
+<td>Lấy GC dump riêng</td>
+</tr>
+<tr>
+<td><strong>Visual Studio Diagnostic Tools</strong></td>
+<td>Heap view, snapshot comparison</td>
+</tr>
+<tr>
+<td><strong>Rider Memory Profiler</strong></td>
+<td>.NET memory profiler</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Các bước debug memory leak:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Monitor memory real-time</span>
+dotnet-counters<span class="w"> </span>monitor<span class="w"> </span>--process-id<span class="w"> </span><span class="m">1234</span><span class="w"> </span>System.Runtime
+
+<span class="c1"># Output:</span>
+<span class="c1"># System.Runtime</span>
+<span class="c1">#     % Time in GC since last GC (%)          0.3</span>
+<span class="c1">#     Allocation Rate (B / 1 sec)             1,234,567</span>
+<span class="c1">#     GC Heap Size (MB)                       850       ← đang tăng dần?</span>
+<span class="c1">#     Gen 0 Size (B)                          2,000,000</span>
+<span class="c1">#     Gen 1 Size (B)                          5,000,000</span>
+<span class="c1">#     Gen 2 Size (B)                          800,000,000  ← Gen2 lớn bất thường</span>
+
+<span class="c1"># 2. Lấy GC dump</span>
+dotnet-gcdump<span class="w"> </span>collect<span class="w"> </span>--process-id<span class="w"> </span><span class="m">1234</span><span class="w"> </span>-o<span class="w"> </span>memory.gcdump
+
+<span class="c1"># 3. Phân tích: mở trong Visual Studio hoặc dotnet-gcdump analyze</span>
+</code></pre></div>
+
+<hr />
+<h2 id="5-gc-pause-ke-thu-cua-latency">⏱️ 5. GC Pause — Kẻ thù của latency</h2>
+<p>GC cần <strong>dừng tất cả managed thread</strong> (pause) để dọn rác — càng lâu càng ảnh hưởng latency.</p>
+<h3 id="51-khi-nao-gc-gay-au">5.1. Khi nào GC gây đau?</h3>
+<ul>
+<li>Gen2 collection: có thể <strong>50-200ms</strong> — API của bạn không phản hồi trong thời gian đó.</li>
+<li>Nếu có <strong>1000 request/giây</strong>, mỗi request latency bị +200ms do GC → trung bình tăng lên.</li>
+<li>Trong thời gian GC: thread bị freeze → request queue dài ra → thêm timeout.</li>
+</ul>
+<h3 id="52-background-gc-giai-phap-cho-net-server">5.2. Background GC — Giải pháp cho .NET Server</h3>
+<p>Từ .NET 4.5+, có <strong>Background GC</strong> (mặc định khi Server GC được bật):</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">Background</span><span class="w"> </span><span class="nv">GC</span>:<span class="w"> </span><span class="nv">GC</span><span class="w"> </span><span class="nv">ch</span>ạ<span class="nv">y</span><span class="w"> </span><span class="nv">song</span><span class="w"> </span><span class="nv">song</span><span class="w"> </span><span class="nv">v</span>ớ<span class="nv">i</span><span class="w"> </span><span class="nv">managed</span><span class="w"> </span><span class="nv">thread</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">D</span>ọ<span class="nv">n</span><span class="w"> </span><span class="nv">Gen0</span><span class="o">/</span><span class="nv">Gen1</span><span class="w"> </span><span class="nv">li</span>ê<span class="nv">n</span><span class="w"> </span><span class="nv">t</span>ụ<span class="nv">c</span><span class="w"> </span><span class="ss">(</span><span class="nv">concurrent</span><span class="ss">)</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">Gen2</span><span class="w"> </span><span class="nv">v</span>ẫ<span class="nv">n</span><span class="w"> </span><span class="nv">ph</span>ả<span class="nv">i</span><span class="w"> </span><span class="k">pause</span>,<span class="w"> </span><span class="nv">nh</span>ư<span class="nv">ng</span><span class="w"> </span><span class="nv">ng</span>ắ<span class="nv">n</span><span class="w"> </span><span class="nv">h</span>ơ<span class="nv">n</span>
+</code></pre></div>
+
+<p><strong>Kết quả:</strong> Gen2 collection không còn "đứng hình" lâu nữa, latency ổn định hơn.</p>
+<h3 id="53-giam-gc-pressure-code-sach-gc-nhe">5.3. Giảm GC pressure — Code sạch = GC nhẹ</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ Tạo nhiều garbage</span>
+<span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="nf">GetFullAddress</span><span class="p">(</span><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">user</span><span class="p">.</span><span class="n">City</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">user</span><span class="p">.</span><span class="n">District</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s">&quot;, &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">user</span><span class="p">.</span><span class="n">Ward</span><span class="p">;</span><span class="w"> </span>
+<span class="w">    </span><span class="c1">// 3 string → 3 allocation → GC có việc làm</span>
+<span class="p">}</span>
+
+<span class="c1">// ✅ Dùng StringBuilder hoặc string interpolation (1 allocation)</span>
+<span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="nf">GetFullAddress</span><span class="p">(</span><span class="n">User</span><span class="w"> </span><span class="n">user</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="s">$&quot;{user.City}, {user.District}, {user.Ward}&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// ❌ LINQ tạo nhiều object tạm</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orders</span><span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">).</span><span class="n">ToList</span><span class="p">();</span>
+<span class="c1">// Where tạo iterator object, List tạo array → GC</span>
+
+<span class="c1">// ✅ Nếu performance-critical, dùng for loop</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">orders</span><span class="p">.</span><span class="n">Count</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">orders</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">Amount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000</span><span class="p">)</span>
+<span class="w">        </span><span class="n">result</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="n">orders</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="54-struct-vs-class-khi-nao-dung-struct-e-giam-gc">5.4. Struct vs Class — Khi nào dùng struct để giảm GC?</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ Class: luôn ở Heap → GC phải dọn</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">PointClass</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">X</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Y</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// ✅ Struct: có thể ở Heap tuỳ nơi dùng</span>
+<span class="k">public</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">PointStruct</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">X</span><span class="p">;</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Y</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Khi nào dùng struct (value type)?</strong>
+- Object nhỏ (&lt; 16 bytes).
+- Immutable hoặc gần immutable.
+- Không cần inheritance.
+- Được dùng trong array/list lớn (mảng struct contiguous → cache friendly).</p>
+<p><strong>Khi nào KHÔNG dùng struct?</strong>
+- Object lớn (&gt; 16 bytes) — copy struct tốn kém hơn copy reference.
+- Cần inheritance/polymorphism.
+- Được pass qua nhiều method (mỗi lần pass là 1 copy).</p>
+<hr />
+<h2 id="tong-ket-cam-nang-sinh-ton">🔧 Tổng kết — Cẩm nang sinh tồn</h2>
+<h3 id="nguyen-tac-vang">Nguyên tắc vàng:</h3>
+<ol>
+<li><strong>Không gọi GC.Collect()</strong> — để GC tự quyết định.</li>
+<li><strong>Bật Server GC</strong> cho API backend.</li>
+<li><strong>Unsubscribe event</strong> khi không cần.</li>
+<li><strong>Dùng ArrayPool<T> cho buffer lớn</strong> (&gt;= 85KB).</li>
+<li><strong>Dùng MemoryCache</strong> thay vì ConcurrentDictionary vô hạn.</li>
+<li><strong>Dùng StringBuilder</strong> cho string concatenation nhiều lần.</li>
+<li><strong>Monitor:</strong> GC Heap Size, % Time in GC, LOH size.</li>
+</ol>
+<h3 id="dau-hieu-nhan-biet-memory-issue">Dấu hiệu nhận biết memory issue:</h3>
+<table>
+<thead>
+<tr>
+<th>Triệu chứng</th>
+<th>Nguyên nhân có thể</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RAM tăng đều, không giảm</td>
+<td>Memory leak (static event, cache vô hạn)</td>
+</tr>
+<tr>
+<td>API chậm dần theo thời gian, restart là hết</td>
+<td>Gen2 collection lâu, memory fragmentation</td>
+</tr>
+<tr>
+<td>OutOfMemoryException dù còn RAM</td>
+<td>LOH fragmentation</td>
+</tr>
+<tr>
+<td>% Time in GC &gt; 5%</td>
+<td>Tạo quá nhiều garbage, cần tối ưu</td>
+</tr>
+<tr>
+<td>Gen0 size không reset sau collection</td>
+<td>Object bị "pin" bởi P/Invoke, unsafe code</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="active-recall-quiz">✅ Active Recall Quiz</h2>
+<details>
+<summary><b>Câu 1:</b> Stack và Heap khác nhau thế nào? Mỗi cái chứa gì?</summary>
+
+**Stack:** mỗi thread 1 stack riêng, LIFO, tự động dọn, chứa value types + references.
+
+**Heap:** tất cả thread chung, chứa reference types, GC phải dọn.
+</details>
+
+<details>
+<summary><b>Câu 2:</b> 3 Generations trong GC là gì? Tại sao có 3 Gen?</summary>
+
+**Gen0:** object mới (chết nhanh), **Gen1:** sống sót 1 lần GC, **Gen2:** sống lâu.
+
+Lý do: **Weak Generational Hypothesis** — 80-90% object mới chết ngay. Phân gen để GC không phải duyệt toàn bộ Heap mỗi lần.
+</details>
+
+<details>
+<summary><b>Câu 3:</b> LOH là gì? Tại sao gây OutOfMemory?</summary>
+
+**LOH (Large Object Heap):** chứa object >= 85KB.
+
+LOH **không compact** mặc định → fragmentation: RAM còn nhiều nhưng không có vùng liên tục đủ lớn cho object mới → OutOfMemory.
+</details>
+
+<details>
+<summary><b>Câu 4:</b> Kể 3 nguyên nhân memory leak trong .NET và cách fix?</summary>
+
+1. **Static event không unsubscribe** → Fix: unsubscribe trong Dispose
+2. **Lambda capture cả object** → Fix: chỉ capture giá trị cần
+3. **Collection tăng vô hạn (ConcurrentDictionary)** → Fix: dùng MemoryCache có eviction
+</details>
+
+<details>
+<summary><b>Câu 5:</b> Server GC vs Workstation GC khác nhau thế nào? Nên dùng cái nào cho API?</summary>
+
+**Server GC:** 1 thread/core, high priority, throughput cao. Phù hợp backend/API.
+**Workstation GC:** 1 thread, normal priority. Phù hợp desktop UI.
+
+**API backend LUÔN dùng Server GC.**
+</details>
+
+<details>
+<summary><b>Câu 6:</b> Tại sao không nên gọi GC.Collect()?</summary>
+
+GC tự biết khi nào cần chạy dựa trên kích thước Gen và memory pressure.
+
+Gọi `GC.Collect()` thủ công:
+- Gây Gen2 collection không cần thiết → app đứng.
+- Làm object trẻ bị promote lên Gen1/Gen2 sớm → Gen2 phình to.
+- Không giải quyết root cause của memory issue.
+
+**Ngoại lệ duy nhất:** Khi bạn biết chính xác mình vừa giải phóng 1 lượng lớn memory (ví dụ load xong 1GB file, không dùng nữa) và muốn trả RAM về OS ngay.
+</details>
+
+<hr />
+<blockquote>
+<p>💬 <em>"GC không phải ma thuật. Nó chỉ dọn được object không ai dùng. Giữ reference vô tình = memory leak dù có GC."</em></p>
+</blockquote>
+<hr />
+<p><em>Đây là bài cuối trong lộ trình 8 bài về kỹ thuật backend .NET chuyên sâu. 🎉</em></p>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>

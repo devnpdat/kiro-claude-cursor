@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 3: Scale Vertical vs Horizontal | Phú Đạt Nguyễn</title>
+    <meta name="description" content="So sánh vertical scaling và horizontal scaling trong kiến trúc microservices với Kubernetes. Senior .NET backend engineer học cách tính toán pod sizing, cấu hình HPA, và chiến lược scale phù hợp cho h">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 3: Scale Vertical vs Horizontal">
+    <meta property="og:description" content="So sánh vertical scaling và horizontal scaling trong kiến trúc microservices với Kubernetes. Senior .NET backend engineer học cách tính toán pod sizing, cấu hình HPA, và chiến lược scale phù hợp cho h">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/03-scale-vertical-vs-horizontal-k8s.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 3: Scale Vertical vs Horizontal">
+    <meta name="twitter:description" content="So sánh vertical scaling và horizontal scaling trong kiến trúc microservices với Kubernetes. Senior .NET backend engineer học cách tính toán pod sizing, cấu hình HPA, và chiến lược scale phù hợp cho h">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/03-scale-vertical-vs-horizontal-k8s.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 3: Scale Vertical vs Horizontal",
+  "description": "So sánh vertical scaling và horizontal scaling trong kiến trúc microservices với Kubernetes. Senior .NET backend engineer học cách tính toán pod sizing, cấu hình HPA, và chiến lược scale phù hợp cho h",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/03-scale-vertical-vs-horizontal-k8s.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-3-scale-nang-cap-may-hay-them-may-k8s-bao-nhieu-pod">Bài 3: Scale — Nâng cấp máy hay thêm máy? K8s bao nhiêu pod?</h1>
+<blockquote>
+<p>Dành cho: kỹ sư backend .NET<br />
+Ngày: 2026-07-10<br />
+Chủ đề: Vertical vs Horizontal Scaling, K8s Pod Sizing, HPA<br />
+Ẩn dụ xuyên suốt: 🍜 <strong>Quán phở</strong></p>
+</blockquote>
+<hr />
+<h2 id="tong-quan-bai-toan-kinh-ien">🎯 Tổng quan — Bài toán kinh điển</h2>
+<p>Quán phở anh mở đông khách quá. Giờ có 2 lựa chọn:</p>
+<div class="codehilite"><pre><span></span><code>╔══════════════════════════════════════════════════════════════════╗
+║                    QUÁN PHỞ ANH ĐẠT                            ║
+║                                                                  ║
+║   Khách xếp hàng dài ngoài cửa... làm sao đây?                ║
+║                                                                  ║
+║   Option A: Nâng cấp quán hiện tại                              ║
+║             (bếp to hơn, đầu bếp giỏi hơn, thêm bàn)          ║
+║                                                                  ║
+║   Option B: Mở thêm chi nhánh                                   ║
+║             (quán 2, quán 3... cùng công thức)                  ║
+╚══════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p>Đây chính là <strong>Vertical vs Horizontal Scaling</strong> — câu hỏi mà bất kỳ thợ code nào cũng sẽ gặp khi hệ thống bắt đầu "đông khách".</p>
+<hr />
+<h2 id="vertical-scaling-scale-up-nang-cap-quan-hien-tai">📐 Vertical Scaling (Scale UP) = Nâng cấp quán hiện tại</h2>
+<h3 id="y-tuong">Ý tưởng</h3>
+<p>Quán phở hiện tại bé quá → <strong>sửa quán to hơn, mua bếp xịn hơn, thuê đầu bếp pro hơn</strong>.</p>
+<p>Trong tech = <strong>thêm RAM, thêm CPU, ổ SSD nhanh hơn</strong> cho CÙNG 1 server.</p>
+<div class="codehilite"><pre><span></span><code>┌──────────────────────────────────────────────────────┐
+│              VERTICAL SCALING (Scale UP)              │
+│                                                       │
+│   TRƯỚC:                    SAU:                      │
+│   ┌─────────┐              ┌─────────────────┐       │
+│   │ 4 CPU   │              │ 16 CPU          │       │
+│   │ 8GB RAM │    ═══►      │ 64GB RAM        │       │
+│   │ HDD     │              │ NVMe SSD        │       │
+│   │ 🍜 x20  │              │ 🍜 x100         │       │
+│   └─────────┘              └─────────────────┘       │
+│                                                       │
+│   Quán nhỏ                  Quán to bự                │
+│   20 khách/h                100 khách/h               │
+└──────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3 id="uu-iem">Ưu điểm</h3>
+<table>
+<thead>
+<tr>
+<th>Ưu điểm</th>
+<th>Giải thích bằng quán phở</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Đơn giản</strong></td>
+<td>Không cần đổi code. Cứ upgrade server thôi. Như mua bếp mới, không cần đổi công thức phở</td>
+</tr>
+<tr>
+<td><strong>Không cần load balancer</strong></td>
+<td>Chỉ có 1 quán, khỏi cần người điều phối khách</td>
+</tr>
+<tr>
+<td><strong>Dễ debug</strong></td>
+<td>1 server = 1 chỗ xem log. Dễ tìm bug hơn</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nhuoc-iem-cai-tran-nha">Nhược điểm — Cái trần nhà</h3>
+<table>
+<thead>
+<tr>
+<th>Nhược điểm</th>
+<th>Giải thích</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Có trần (ceiling)</strong></td>
+<td>Server khủng nhất thế giới vẫn có giới hạn. Quán to cỡ nào cũng chỉ chứa X khách</td>
+</tr>
+<tr>
+<td><strong>Chi phí tăng theo cấp số nhân</strong></td>
+<td>16→32GB RAM = x2 giá. Nhưng 128→256GB = x5 đến x10 giá 💸</td>
+</tr>
+<tr>
+<td><strong>Downtime khi upgrade</strong></td>
+<td>Phải đóng quán để sửa. Server phải restart để thêm RAM</td>
+</tr>
+<tr>
+<td><strong>Single point of failure</strong></td>
+<td>1 quán cháy = mất hết. 1 server die = toàn bộ hệ thống sập</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>💸 Chi phí Vertical Scaling — Đường cong kinh hoàng:
+
+Chi phí ($)
+    │                                          ╱
+    │                                        ╱
+    │                                      ╱
+    │                                   ╱
+    │                                ╱
+    │                            ╱
+    │                        ╱
+    │                   ╱╱
+    │              ╱╱
+    │         ╱╱
+    │     ╱╱
+    │  ╱╱
+    │╱
+    └────────────────────────────────────────── Tài nguyên
+     4GB   8GB   16GB   32GB   64GB   128GB   256GB
+
+    → Càng lên cao, càng đắt kinh khủng!
+</code></pre></div>
+
+<hr />
+<h2 id="horizontal-scaling-scale-out-mo-them-chi-nhanh">📐 Horizontal Scaling (Scale OUT) = Mở thêm chi nhánh</h2>
+<h3 id="y-tuong_1">Ý tưởng</h3>
+<p>Thay vì sửa 1 quán to hơn → <strong>mở thêm chi nhánh</strong>, mỗi quán cùng nấu 1 công thức phở.</p>
+<p>Trong tech = <strong>thêm pod/instance/server chạy cùng 1 code</strong>.</p>
+<div class="codehilite"><pre><span></span><code>┌──────────────────────────────────────────────────────────┐
+│             HORIZONTAL SCALING (Scale OUT)                │
+│                                                           │
+│   TRƯỚC:                SAU:                              │
+│   ┌─────────┐          ┌─────────┐  ┌─────────┐         │
+│   │ Quán 1  │          │ Quán 1  │  │ Quán 2  │         │
+│   │ 🍜 x20  │  ═══►   │ 🍜 x20  │  │ 🍜 x20  │         │
+│   └─────────┘          └─────────┘  └─────────┘         │
+│                         ┌─────────┐  ┌─────────┐         │
+│                         │ Quán 3  │  │ Quán 4  │         │
+│                         │ 🍜 x20  │  │ 🍜 x20  │         │
+│                         └─────────┘  └─────────┘         │
+│                                                           │
+│   20 khách/h            80 khách/h (4 quán x 20)         │
+│                                                           │
+│   + Cần: 🧑‍💼 Người điều phối khách (Load Balancer)       │
+│   + Cần: 📋 Công thức phở giống nhau (Stateless Code)    │
+└──────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3 id="uu-iem_1">Ưu điểm</h3>
+<table>
+<thead>
+<tr>
+<th>Ưu điểm</th>
+<th>Giải thích bằng quán phở</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Không có trần</strong></td>
+<td>Cần thêm? Mở thêm chi nhánh. Lý thuyết: vô hạn</td>
+</tr>
+<tr>
+<td><strong>Fault tolerant</strong></td>
+<td>Quán 1 cháy? Còn quán 2, 3, 4 phục vụ. Khách không bị đói</td>
+</tr>
+<tr>
+<td><strong>Chi phí tuyến tính</strong></td>
+<td>Gấp đôi khách = gấp đôi quán = gấp đôi chi phí. Công bằng!</td>
+</tr>
+<tr>
+<td><strong>Scale linh hoạt</strong></td>
+<td>Giờ cao điểm mở thêm, giờ vắng đóng bớt (K8s HPA!)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nhuoc-iem-nhung-kho-hon">Nhược điểm — Nhưng khó hơn!</h3>
+<table>
+<thead>
+<tr>
+<th>Nhược điểm</th>
+<th>Giải thích</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cần Load Balancer</strong></td>
+<td>Phải có người điều phối: "Anh đi quán 2, chị đi quán 3"</td>
+</tr>
+<tr>
+<td><strong>Code phải stateless</strong></td>
+<td>Phở phải giống nhau mọi quán! Không được kiểu "quán 1 nhớ anh thích thêm hành" mà quán 2 không biết</td>
+</tr>
+<tr>
+<td><strong>Phức tạp hơn</strong></td>
+<td>Session, cache, file upload... phải share giữa các quán (Redis, S3...)</td>
+</tr>
+<tr>
+<td><strong>Thêm pod ≠ giải quyết mọi vấn đề</strong></td>
+<td>Nếu 1 tô nấu 5 phút, 10 quán nấu vẫn 5 phút/tô</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="golden-rule-khi-nao-dung-cai-nao">⚖️ Golden Rule — Khi nào dùng cái nào?</h2>
+<div class="codehilite"><pre><span></span><code>╔════════════════════════════════════════════════════════════════════╗
+║                     🏆 QUY TẮC VÀNG                               ║
+║                                                                    ║
+║  ❓ 1 request chậm?                                               ║
+║  → VERTICAL / FIX CODE                                            ║
+║  → Mở chi nhánh không giúp gì — 1 tô phở vẫn nấu chậm!         ║
+║                                                                    ║
+║  ❓ Nhiều request đổ về cùng lúc, server quá tải?                 ║
+║  → HORIZONTAL                                                      ║
+║  → Chia khách ra nhiều quán!                                       ║
+╚════════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<h3 id="bang-quyet-inh-nhanh">Bảng quyết định nhanh</h3>
+<table>
+<thead>
+<tr>
+<th>Triệu chứng</th>
+<th>Giải pháp</th>
+<th>Ẩn dụ phở</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 API call mất 5s</td>
+<td>Fix code / vertical</td>
+<td>Đầu bếp nấu chậm → dạy nấu nhanh hơn, KHÔNG mở thêm quán</td>
+</tr>
+<tr>
+<td>100 user đồng thời, server 100% CPU</td>
+<td>Horizontal</td>
+<td>Quán full bàn → mở chi nhánh</td>
+</tr>
+<tr>
+<td>Query DB mất 3s</td>
+<td>Fix query (index!)</td>
+<td>Tìm nguyên liệu trong kho lộn xộn → sắp xếp kho</td>
+</tr>
+<tr>
+<td>Upload file 1GB chậm</td>
+<td>Vertical (RAM/bandwidth)</td>
+<td>Cửa quán bé → mở cửa to hơn</td>
+</tr>
+<tr>
+<td>10K request/s</td>
+<td>Horizontal + cache</td>
+<td>10K khách → chuỗi quán + phở đóng gói sẵn (cache)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="k8s-pod-sizing-quan-pho-trong-kubernetes">🐳 K8s Pod Sizing — Quán phở trong Kubernetes</h2>
+<h3 id="khai-niem-co-ban">Khái niệm cơ bản</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">┌──────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                    </span><span class="n">K8s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">Ô</span><span class="n">NG</span><span class="w"> </span><span class="n">CHỦ</span><span class="w"> </span><span class="n">CHUỖI</span><span class="w">                       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Pod</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">chi</span><span class="w"> </span><span class="n">nhánh</span><span class="w"> </span><span class="n">quán</span><span class="w"> </span><span class="n">phở</span><span class="w">                                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">khu</span><span class="w"> </span><span class="n">phố</span><span class="w"> </span><span class="p">(</span><span class="n">có</span><span class="w"> </span><span class="n">nhiều</span><span class="w"> </span><span class="n">mặt</span><span class="w"> </span><span class="n">bằng</span><span class="w"> </span><span class="n">cho</span><span class="w"> </span><span class="n">quán</span><span class="p">)</span><span class="w">             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Cluster</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cả</span><span class="w"> </span><span class="n">thành</span><span class="w"> </span><span class="n">phố</span><span class="w">                                     </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Deployment</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bản</span><span class="w"> </span><span class="n">thiết</span><span class="w"> </span><span class="n">kế</span><span class="w"> </span><span class="n">quán</span><span class="w"> </span><span class="p">(</span><span class="n">bao</span><span class="w"> </span><span class="n">nhiêu</span><span class="w"> </span><span class="n">quán</span><span class="p">,</span><span class="w"> </span><span class="n">spec</span><span class="w"> </span><span class="n">gì</span><span class="p">)</span><span class="w">  </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">bảng</span><span class="w"> </span><span class="n">chỉ</span><span class="w"> </span><span class="err">đườ</span><span class="n">ng</span><span class="w"> </span><span class="n">cho</span><span class="w"> </span><span class="n">khách</span><span class="w">                         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">HPA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">ô</span><span class="n">ng</span><span class="w"> </span><span class="n">chủ</span><span class="w"> </span><span class="n">xem</span><span class="w"> </span><span class="nb">camera</span><span class="p">,</span><span class="w"> </span><span class="n">quyết</span><span class="w"> </span><span class="err">đị</span><span class="n">nh</span><span class="w"> </span><span class="n">mở</span><span class="o">/</span><span class="err">đó</span><span class="n">ng</span><span class="w"> </span><span class="n">chi</span><span class="w"> </span><span class="n">nhánh</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">┌───</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="p">(</span><span class="n">Khu</span><span class="w"> </span><span class="n">phố</span><span class="p">)</span><span class="w"> </span><span class="err">───────────────────────┐</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                                            </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">┌─</span><span class="n">Pod</span><span class="w"> </span><span class="mi">1</span><span class="err">──┐</span><span class="w">  </span><span class="err">┌─</span><span class="n">Pod</span><span class="w"> </span><span class="mi">2</span><span class="err">──┐</span><span class="w">  </span><span class="err">┌─</span><span class="n">Pod</span><span class="w"> </span><span class="mi">3</span><span class="err">──┐</span><span class="w">     </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="err">🍜</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="err">🍜</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="w"> </span><span class="err">🍜</span><span class="w">     </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="mf">0.5</span><span class="w"> </span><span class="n">CPU</span><span class="w"> </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="mf">0.5</span><span class="w"> </span><span class="n">CPU</span><span class="w"> </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="mf">0.5</span><span class="w"> </span><span class="n">CPU</span><span class="w"> </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="mi">512</span><span class="n">MB</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="mi">512</span><span class="n">MB</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">│</span><span class="mi">512</span><span class="n">MB</span><span class="w">   </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="err">└────────┘</span><span class="w">  </span><span class="err">└────────┘</span><span class="w">  </span><span class="err">└────────┘</span><span class="w">     </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">                                            </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">  </span><span class="n">Node</span><span class="w"> </span><span class="n">total</span><span class="err">:</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">CPU</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="n">GB</span><span class="w"> </span><span class="n">RAM</span><span class="w">               </span><span class="err">│</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└────────────────────────────────────────────┘</span><span class="w">              </span><span class="err">│</span>
+<span class="err">└──────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<h3 id="resourcesrequests-vs-resourceslimits">resources.requests vs resources.limits</h3>
+<p>Đây là phần HAY NHẦM nhất. Hãy nghĩ thế này:</p>
+<div class="codehilite"><pre><span></span><code>resources.requests = Diện tích MẶT BẰNG TỐI THIỂU anh thuê (20m²)
+                     → K8s đảm bảo quán anh LUÔN CÓ ít nhất 20m²
+                     → Dùng để K8s quyết định xếp pod vào node nào
+
+resources.limits   = Diện tích TỐI ĐA được phép dùng (40m²)
+                     → Quán anh mà bày bàn ghế tràn ra quá 40m²?
+                     → BỊ ĐUỔI! (OOMKilled / CPU throttled)
+</code></pre></div>
+
+<h3 id="yaml-mau-net-api-ien-hinh-io-bound">YAML mẫu — .NET API điển hình (I/O-bound)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># deployment.yaml - Quán Phở API</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">                    </span><span class="c1"># Mở 2 quán ban đầu (HA)</span>
+<span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api</span>
+<span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api</span>
+<span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api</span>
+<span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api:latest</span>
+<span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+<span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">requests</span><span class="p">:</span><span class="w">               </span><span class="c1"># 🏠 Mặt bằng tối thiểu</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;250m&quot;</span><span class="w">           </span><span class="c1"># 0.25 core — đủ cho I/O-bound</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;256Mi&quot;</span><span class="w">       </span><span class="c1"># 256MB — .NET API thường dùng tầm này</span>
+<span class="w">          </span><span class="nt">limits</span><span class="p">:</span><span class="w">                 </span><span class="c1"># 🚧 Giới hạn tối đa</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;500m&quot;</span><span class="w">           </span><span class="c1"># 0.5 core — cho phép burst gấp đôi</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span><span class="w">       </span><span class="c1"># 512MB — vượt = OOMKilled 💀</span>
+<span class="w">        </span><span class="nt">readinessProbe</span><span class="p">:</span><span class="w">           </span><span class="c1"># Kiểm tra quán đã sẵn sàng chưa</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span><span class="w">            </span><span class="c1"># Kiểm tra quán còn hoạt động không</span>
+<span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
+<span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
+<span class="w">            </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+<span class="w">          </span><span class="nt">initialDelaySeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+<span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+</code></pre></div>
+
+<h3 id="giai-thich-cpu-units">Giải thích CPU units</h3>
+<div class="codehilite"><pre><span></span><code><span class="mi">1</span><span class="w"> </span><span class="n">CPU</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span><span class="n">m</span><span class="w"> </span><span class="p">(</span><span class="n">millicores</span><span class="p">)</span>
+<span class="mf">0.5</span><span class="w"> </span><span class="n">CPU</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="n">m</span>
+<span class="mf">0.25</span><span class="w"> </span><span class="n">CPU</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">250</span><span class="n">m</span>
+
+<span class="n">Ví</span><span class="w"> </span><span class="n">dụ</span><span class="w"> </span><span class="n">thực</span><span class="w"> </span><span class="n">tế</span><span class="p">:</span>
+<span class="err">┌─────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Loại</span><span class="w"> </span><span class="n">workload</span><span class="w">         </span><span class="err">│</span><span class="w">  </span><span class="n">CPU</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="err">│</span><span class="w">  </span><span class="n">CPU</span><span class="w"> </span><span class="n">limit</span><span class="w">  </span><span class="err">│</span>
+<span class="err">├────────────────────────┼──────────────┼─────────────┤</span>
+<span class="err">│</span><span class="w">  </span><span class="o">.</span><span class="n">NET</span><span class="w"> </span><span class="n">I</span><span class="o">/</span><span class="n">O</span><span class="o">-</span><span class="n">bound</span><span class="w"> </span><span class="n">API</span><span class="w">    </span><span class="err">│</span><span class="w">  </span><span class="mi">250</span><span class="n">m</span><span class="w">        </span><span class="err">│</span><span class="w">  </span><span class="mi">500</span><span class="n">m</span><span class="w">       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="o">.</span><span class="n">NET</span><span class="w"> </span><span class="n">CPU</span><span class="o">-</span><span class="n">heavy</span><span class="w"> </span><span class="p">(</span><span class="n">calc</span><span class="p">)</span><span class="w"> </span><span class="err">│</span><span class="w">  </span><span class="mi">500</span><span class="n">m</span><span class="o">-</span><span class="mi">1000</span><span class="n">m</span><span class="w">  </span><span class="err">│</span><span class="w">  </span><span class="mi">1000</span><span class="o">-</span><span class="mi">2000</span><span class="n">m</span><span class="w"> </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Background</span><span class="w"> </span><span class="n">worker</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="mi">100</span><span class="n">m</span><span class="w">        </span><span class="err">│</span><span class="w">  </span><span class="mi">250</span><span class="n">m</span><span class="w">       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Redis</span><span class="w"> </span><span class="n">sidecar</span><span class="w">         </span><span class="err">│</span><span class="w">  </span><span class="mi">50</span><span class="n">m</span><span class="w">         </span><span class="err">│</span><span class="w">  </span><span class="mi">100</span><span class="n">m</span><span class="w">       </span><span class="err">│</span>
+<span class="err">└─────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>Mẹo thực tế</strong>: Với .NET API chủ yếu gọi DB, gọi Redis, gọi API khác (I/O-bound) → <strong>0.25-0.5 core, 256-512MB là đủ</strong>. Đừng phí 2 core 2GB cho cái mà 90% thời gian nó ngồi chờ I/O.</p>
+</blockquote>
+<hr />
+<h2 id="hpa-horizontal-pod-autoscaler">📈 HPA — Horizontal Pod Autoscaler</h2>
+<h3 id="hpa-ong-chu-chuoi-ngoi-xem-camera">HPA = Ông chủ chuỗi ngồi xem camera</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">┌──────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                 </span><span class="n">HPA</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">AUTO</span><span class="w"> </span><span class="n">SCALING</span><span class="w">                            </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">👨‍💼</span><span class="w"> </span><span class="err">Ô</span><span class="n">ng</span><span class="w"> </span><span class="n">chủ</span><span class="w"> </span><span class="p">(</span><span class="n">HPA</span><span class="p">)</span><span class="w"> </span><span class="n">ngồi</span><span class="w"> </span><span class="n">xem</span><span class="w"> </span><span class="nb">camera</span><span class="err">:</span><span class="w">                        </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">📹</span><span class="w"> </span><span class="s2">&quot;Quán 1 đông quá! CPU &gt; 70%&quot;</span><span class="w">                           </span><span class="err">│</span>
+<span class="err">│</span><span class="w">       </span><span class="err">→</span><span class="w"> </span><span class="s2">&quot;Mở thêm quán 2!&quot;</span><span class="w">                                    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">📹</span><span class="w"> </span><span class="s2">&quot;Quán 2 cũng đông! CPU &gt; 70%&quot;</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">       </span><span class="err">→</span><span class="w"> </span><span class="s2">&quot;Mở thêm quán 3!&quot;</span><span class="w">                                    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">📹</span><span class="w"> </span><span class="s2">&quot;Giờ trưa qua rồi, quán 2,3 vắng hoe...&quot;</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">       </span><span class="err">→</span><span class="w"> </span><span class="s2">&quot;Đóng quán 3, giữ quán 1,2&quot;</span><span class="w">                         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Timeline</span><span class="err">:</span><span class="w">                                                   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">────────────────────────────────────────────────</span><span class="w">            </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="mi">06</span><span class="err">:</span><span class="mi">00</span><span class="w">  </span><span class="mi">2</span><span class="w"> </span><span class="n">pods</span><span class="w">  </span><span class="err">██</span><span class="w">                                           </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="mi">11</span><span class="err">:</span><span class="mi">00</span><span class="w">  </span><span class="mi">5</span><span class="w"> </span><span class="n">pods</span><span class="w">  </span><span class="err">█████</span><span class="w">          </span><span class="p">(</span><span class="n">giờ</span><span class="w"> </span><span class="n">cao</span><span class="w"> </span><span class="err">đ</span><span class="n">iểm</span><span class="w"> </span><span class="n">trưa</span><span class="p">)</span><span class="w">          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="mi">14</span><span class="err">:</span><span class="mi">00</span><span class="w">  </span><span class="mi">3</span><span class="w"> </span><span class="n">pods</span><span class="w">  </span><span class="err">███</span><span class="w">                                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="mi">17</span><span class="err">:</span><span class="mi">00</span><span class="w">  </span><span class="mi">6</span><span class="w"> </span><span class="n">pods</span><span class="w">  </span><span class="err">██████</span><span class="w">         </span><span class="p">(</span><span class="n">giờ</span><span class="w"> </span><span class="n">cao</span><span class="w"> </span><span class="err">đ</span><span class="n">iểm</span><span class="w"> </span><span class="n">chiều</span><span class="p">)</span><span class="w">         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="mi">22</span><span class="err">:</span><span class="mi">00</span><span class="w">  </span><span class="mi">2</span><span class="w"> </span><span class="n">pods</span><span class="w">  </span><span class="err">██</span><span class="w">             </span><span class="p">(</span><span class="n">vắng</span><span class="p">,</span><span class="w"> </span><span class="k">scale</span><span class="w"> </span><span class="n">down</span><span class="p">)</span><span class="w">           </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">────────────────────────────────────────────────</span><span class="w">            </span><span class="err">│</span>
+<span class="err">└──────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<h3 id="yaml-mau-hpa-config">YAML mẫu — HPA config</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># hpa.yaml - Ông chủ tự động mở/đóng chi nhánh</span>
+<span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">autoscaling/v2</span>
+<span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HorizontalPodAutoscaler</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api-hpa</span>
+<span class="nt">spec</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">scaleTargetRef</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pho-api</span>
+<span class="w">  </span><span class="nt">minReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">              </span><span class="c1"># 🔒 Luôn giữ ít nhất 2 quán (HA)</span>
+<span class="w">                               </span><span class="c1">#    1 quán chết → quán kia vẫn phục vụ</span>
+<span class="w">  </span><span class="nt">maxReplicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span><span class="w">              </span><span class="c1"># 🚫 Tối đa 8 quán</span>
+<span class="w">                               </span><span class="c1">#    Vì DB chỉ chịu được ~80 connections</span>
+<span class="w">  </span><span class="nt">metrics</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cpu</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">70</span><span class="w">   </span><span class="c1"># 📊 CPU &gt; 70% → scale up</span>
+<span class="w">                                  </span><span class="c1">#    Tại sao 70% không phải 90%?</span>
+<span class="w">                                  </span><span class="c1">#    → Cần headroom cho burst traffic</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Resource</span>
+<span class="w">    </span><span class="nt">resource</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">memory</span>
+<span class="w">      </span><span class="nt">target</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Utilization</span>
+<span class="w">        </span><span class="nt">averageUtilization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span><span class="w">   </span><span class="c1"># 📊 Memory &gt; 80% → scale up</span>
+<span class="w">  </span><span class="nt">behavior</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">scaleUp</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span><span class="w">    </span><span class="c1"># Chờ 1 phút trước khi scale up</span>
+<span class="w">                                         </span><span class="c1"># (tránh scale vì spike tạm thời)</span>
+<span class="w">      </span><span class="nt">policies</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pods</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">                         </span><span class="c1"># Tối đa thêm 2 pod mỗi lần</span>
+<span class="w">        </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+<span class="w">    </span><span class="nt">scaleDown</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span><span class="w">   </span><span class="c1"># Chờ 5 phút trước khi scale down</span>
+<span class="w">                                         </span><span class="c1"># (tránh &quot;đóng quán&quot; rồi lại phải &quot;mở lại&quot;)</span>
+<span class="w">      </span><span class="nt">policies</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pods</span>
+<span class="w">        </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span><span class="w">                         </span><span class="c1"># Tối đa giảm 1 pod mỗi lần</span>
+<span class="w">        </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120</span><span class="w">              </span><span class="c1"># Mỗi 2 phút mới giảm thêm</span>
+</code></pre></div>
+
+<h3 id="giai-thich-cac-con-so">Giải thích các con số</h3>
+<div class="codehilite"><pre><span></span><code>minReplicas: 2
+├── Tại sao KHÔNG PHẢI 1?
+│   → 1 pod chết = DOWNTIME. Khách đến quán thấy đóng cửa!
+│   → 2 pod = High Availability. 1 pod restart, pod kia vẫn phục vụ
+│
+maxReplicas: 8
+├── Tại sao KHÔNG PHẢI 100?
+│   → Mỗi pod mở ~10 DB connections
+│   → 100 pods = 1000 connections → DB chết ngay!  💀
+│   → Tính: DB max connections / connections per pod = max pods
+│   → Ví dụ: 100 DB connections / 10 per pod = max 10 pods
+│
+averageUtilization: 70 (CPU)
+├── Tại sao 70% không phải 90%?
+│   → 90% = quá sát giới hạn
+│   → Burst traffic đến → CPU 100% → pod chậm/crash TRƯỚC KHI kịp scale
+│   → 70% = đủ headroom, HPA có thời gian mở thêm quán
+</code></pre></div>
+
+<hr />
+<h2 id="cong-thuc-tinh-pod">🔢 Công thức tính Pod</h2>
+<h3 id="cong-thuc-co-ban">Công thức cơ bản</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">┌──────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                    </span><span class="n">CÔNG</span><span class="w"> </span><span class="n">THỨC</span><span class="w"> </span><span class="n">TÍNH</span><span class="w"> </span><span class="n">POD</span><span class="w">                         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Pods</span><span class="w"> </span><span class="n">cần</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Peak</span><span class="w"> </span><span class="n">RPS</span><span class="w"> </span><span class="err">÷</span><span class="w"> </span><span class="n">RPS</span><span class="w"> </span><span class="n">mỗi</span><span class="w"> </span><span class="n">pod</span><span class="w">                         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Sau</span><span class="w"> </span><span class="err">đó</span><span class="p">:</span><span class="w"> </span><span class="err">×</span><span class="w"> </span><span class="mf">1.3</span><span class="w"> </span><span class="err">đế</span><span class="n">n</span><span class="w"> </span><span class="mf">1.5</span><span class="w"> </span><span class="p">(</span><span class="n">buffer</span><span class="w"> </span><span class="mi">30</span><span class="o">-</span><span class="mi">50</span><span class="o">%</span><span class="p">)</span><span class="w">                    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">──────────────────────────────────────</span><span class="w">                      </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Ví</span><span class="w"> </span><span class="n">dụ</span><span class="w"> </span><span class="n">thực</span><span class="w"> </span><span class="n">tế</span><span class="p">:</span><span class="w">                                             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">📊</span><span class="w"> </span><span class="n">Peak</span><span class="w"> </span><span class="n">traffic</span><span class="p">:</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span><span class="n">req</span><span class="o">/</span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="n">giờ</span><span class="w"> </span><span class="n">cao</span><span class="w"> </span><span class="err">đ</span><span class="n">iểm</span><span class="p">)</span><span class="w">                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">📊</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">pod</span><span class="w"> </span><span class="n">xử</span><span class="w"> </span><span class="n">lý</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="w"> </span><span class="n">req</span><span class="o">/</span><span class="n">s</span><span class="w"> </span><span class="p">(</span><span class="err">đ</span><span class="n">o</span><span class="w"> </span><span class="n">bằng</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">test</span><span class="p">)</span><span class="w">             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Pods</span><span class="w"> </span><span class="n">cần</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span><span class="err">÷</span><span class="w"> </span><span class="mi">50</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="n">pods</span><span class="w">                              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="o">+</span><span class="w"> </span><span class="n">Buffer</span><span class="w"> </span><span class="mi">30</span><span class="o">%</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="w"> </span><span class="err">×</span><span class="w"> </span><span class="mf">1.3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">5.2</span><span class="w"> </span><span class="err">≈</span><span class="w"> </span><span class="mi">6</span><span class="w"> </span><span class="n">pods</span><span class="w">                    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">HPA</span><span class="w"> </span><span class="n">config</span><span class="p">:</span><span class="w"> </span><span class="nb">min</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="o">=</span><span class="mi">8</span><span class="w">                                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">     </span><span class="p">(</span><span class="nb">min</span><span class="o">=</span><span class="mi">2</span><span class="w"> </span><span class="n">cho</span><span class="w"> </span><span class="n">HA</span><span class="p">,</span><span class="w"> </span><span class="nb">max</span><span class="o">=</span><span class="mi">8</span><span class="w"> </span><span class="n">cho</span><span class="w"> </span><span class="n">peak</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">thêm</span><span class="w"> </span><span class="n">buffer</span><span class="p">)</span><span class="w">            </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">└──────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<h3 id="bang-tham-khao-nhanh-net-api-io-bound">Bảng tham khảo nhanh — .NET API (I/O-bound)</h3>
+<table>
+<thead>
+<tr>
+<th>Pod spec</th>
+<th>RPS ước tính</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.25 core, 256MB</td>
+<td>30-50 req/s</td>
+<td>API đơn giản, query nhẹ</td>
+</tr>
+<tr>
+<td>0.5 core, 512MB</td>
+<td>50-100 req/s</td>
+<td>API trung bình, có cache</td>
+</tr>
+<tr>
+<td>1 core, 1GB</td>
+<td>100-200 req/s</td>
+<td>API phức tạp, nhiều logic</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Cảnh báo</strong>: Nếu pod 0.5 core mà <strong>dưới 30 req/s</strong> → <strong>CHECK CODE TRƯỚC!</strong> Đừng vội thêm pod. Như kiểu đầu bếp nấu 1 tô mất 10 phút — thêm bếp không giúp gì, phải dạy đầu bếp nấu nhanh hơn!</p>
+</blockquote>
+<h3 id="vi-du-tinh-toan-ay-u">Ví dụ tính toán đầy đủ</h3>
+<div class="codehilite"><pre><span></span><code>🏪 Hệ thống quán phở Online:
+
+Dữ kiện:
+<span class="k">-</span> Peak traffic: 500 req/s (11h-13h trưa)
+<span class="k">-</span> Off-peak: 50 req/s (22h-6h)
+<span class="k">-</span> Load test: 1 pod (0.5 core, 512MB) xử lý ~80 req/s
+<span class="k">-</span> DB PostgreSQL: max_connections = 100
+<span class="k">-</span> Mỗi pod dùng connection pool size = 10
+
+Tính toán:
+1. Pods cho peak   = 500 ÷ 80 = 6.25 → 7 pods
+2. + Buffer 30%    = 7 × 1.3 = 9.1 → 10 pods
+3. Check DB limit  = 100 ÷ 10 = 10 pods max ← 😬 SÁT LIMIT!
+4. Giảm pool size  = 100 ÷ 5 = 20 pods max ← OK, nhưng pool nhỏ quá
+5. Hoặc thêm cache → giảm DB calls → mỗi pod cần ít connections hơn ✅
+
+Kết luận:
+<span class="k">-</span> minReplicas: 2 (off-peak + HA)
+<span class="k">-</span> maxReplicas: 10 (peak + buffer, nhưng phải monitor DB connections!)
+<span class="k">-</span> Thêm Redis cache → giảm 60% DB calls → thực tế chỉ cần 4-6 pods
+</code></pre></div>
+
+<hr />
+<h2 id="classic-trap-cai-bay-kinh-ien">🪤 Classic Trap — Cái bẫy kinh điển</h2>
+<h3 id="death-spiral-vong-xoay-chet">Death Spiral — Vòng xoáy chết</h3>
+<p>Đây là cái bẫy mà nhiều team dính phải. Đọc kỹ nha:</p>
+<div class="codehilite"><pre><span></span><code><span class="w">            </span>💀<span class="w"> </span><span class="nv">THE</span><span class="w"> </span><span class="nv">DEATH</span><span class="w"> </span><span class="nv">SPIRAL</span><span class="w"> </span>💀
+
+<span class="w">   </span><span class="nv">More</span><span class="w"> </span><span class="nv">pods</span><span class="w"> </span>──────────────────────────────►
+<span class="w">       </span>│<span class="w">                                     </span>│
+<span class="w">       </span>│<span class="w">  </span>┌──────────────────────────────┐<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">Pods</span><span class="w"> </span><span class="nv">nhi</span>ề<span class="nv">u</span><span class="w"> </span><span class="nv">h</span>ơ<span class="nv">n</span><span class="w">               </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">DB</span><span class="w"> </span><span class="nv">connections</span><span class="w"> </span><span class="nv">t</span>ă<span class="nv">ng</span><span class="w">          </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">DB</span><span class="w"> </span><span class="nv">qu</span>á<span class="w"> </span><span class="nv">t</span>ả<span class="nv">i</span>,<span class="w"> </span><span class="nv">query</span><span class="w"> </span><span class="nv">ch</span>ậ<span class="nv">m</span><span class="w">       </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">T</span>ấ<span class="nv">t</span><span class="w"> </span><span class="nv">c</span>ả<span class="w"> </span><span class="nv">pods</span><span class="w"> </span><span class="nv">ch</span>ậ<span class="nv">m</span><span class="w"> </span><span class="nv">theo</span><span class="w">        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">CPU</span><span class="w"> </span><span class="nv">t</span>ă<span class="nv">ng</span><span class="w"> </span><span class="nv">v</span>ì<span class="w"> </span><span class="nv">request</span><span class="w"> </span><span class="nv">pending</span><span class="w">  </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">HPA</span><span class="w"> </span><span class="nv">th</span>ấ<span class="nv">y</span><span class="w"> </span><span class="nv">CPU</span><span class="w"> </span><span class="nv">cao</span><span class="w">            </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">HPA</span><span class="w"> </span><span class="nv">th</span>ê<span class="nv">m</span><span class="w"> </span><span class="nv">NHI</span>Ề<span class="nv">U</span><span class="w"> </span><span class="nv">pods</span><span class="w"> </span><span class="nv">h</span>ơ<span class="nv">n</span><span class="o">!</span><span class="w">    </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span><span class="nv">DB</span><span class="w"> </span><span class="nv">connections</span><span class="w"> </span><span class="nv">t</span>ă<span class="nv">ng</span><span class="w"> </span><span class="nv">N</span>Ữ<span class="nv">A</span><span class="w">      </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w">     </span>↓<span class="w">                        </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>│<span class="w"> </span>💀<span class="w"> </span><span class="nv">DB</span><span class="w"> </span><span class="nv">CH</span>Ế<span class="nv">T</span><span class="w"> </span>→<span class="w"> </span><span class="nv">T</span>Ấ<span class="nv">T</span><span class="w"> </span><span class="nv">C</span>Ả<span class="w"> </span><span class="nv">CH</span>Ế<span class="nv">T</span><span class="w">   </span>│<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">  </span>└──────────────────────────────┘<span class="w">  </span>│
+<span class="w">       </span>│<span class="w">                                     </span>│
+<span class="w">       </span>◄─────────────────────────────────────┘
+<span class="w">              </span><span class="nv">Repeat</span><span class="w"> </span><span class="k">until</span><span class="w"> </span>💀💀💀
+</code></pre></div>
+
+<h3 id="an-du-quan-pho">Ẩn dụ quán phở</h3>
+<blockquote>
+<p>Quán phở đông quá → mở thêm chi nhánh → tất cả chi nhánh đều gọi nguyên liệu từ <strong>1 kho duy nhất</strong> → kho quá tải → tất cả quán đều thiếu nguyên liệu → khách chờ lâu → mở thêm chi nhánh NỮA → kho <strong>SẬP</strong> → tất cả quán <strong>ĐÓNG CỬA</strong> 💀</p>
+</blockquote>
+<h3 id="giai-phap-check-truoc-khi-scale">Giải pháp — CHECK TRƯỚC KHI SCALE</h3>
+<div class="codehilite"><pre><span></span><code>🔍 Trước khi thêm pod, PHẢI check theo thứ tự:
+
+1. DB Connection Pool
+   → Tổng connections = pods × pool_size
+   → PHẢI &lt; DB max_connections (để headroom)
+
+2. Redis Cache
+   → Cache các query hay dùng
+   → Giảm 50-80% DB calls
+
+3. Async đúng cách
+   → await Task.WhenAll() thay vì await từng cái
+   → Không block thread pool
+
+4. Query optimization
+   → Index đã đúng?
+   → N+1 query?
+   → SELECT * hay SELECT cần gì lấy đó?
+</code></pre></div>
+
+<hr />
+<h2 id="checklist-truoc-khi-scale">✅ Checklist trước khi Scale</h2>
+<p>Mỗi lần muốn thêm pod, chạy qua checklist này:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">┌──────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">           </span><span class="err">📋</span><span class="w"> </span><span class="nx">CHECKLIST</span><span class="w"> </span><span class="nx">TRƯỚC</span><span class="w"> </span><span class="nx">KHI</span><span class="w"> </span><span class="nx">SCALE</span><span class="w">                       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">□</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="w"> </span><span class="nx">Code</span><span class="w"> </span><span class="nx">async</span><span class="o">/</span><span class="nx">await</span><span class="w"> </span><span class="nx">đúng</span><span class="w"> </span><span class="nx">chưa</span><span class="p">?</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">ConfigureAwait</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span><span class="w"> </span><span class="nx">cho</span><span class="w"> </span><span class="kn">library</span><span class="w"> </span><span class="nx">code</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Không</span><span class="w"> </span><span class="p">.</span><span class="nx">Result</span><span class="w"> </span><span class="nx">hay</span><span class="w"> </span><span class="p">.</span><span class="nx">Wait</span><span class="p">()</span><span class="w"> </span><span class="p">(</span><span class="nx">sync</span><span class="w"> </span><span class="nx">over</span><span class="w"> </span><span class="nx">async</span><span class="p">)</span><span class="w">         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Task</span><span class="p">.</span><span class="nx">WhenAll</span><span class="w"> </span><span class="nx">cho</span><span class="w"> </span><span class="nx">parallel</span><span class="w"> </span><span class="nx">calls</span><span class="w">                     </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">□</span><span class="w"> </span><span class="mi">2</span><span class="p">.</span><span class="w"> </span><span class="nx">Database</span><span class="w"> </span><span class="nx">queries</span><span class="w"> </span><span class="nx">tối</span><span class="w"> </span><span class="nx">ưu</span><span class="w"> </span><span class="nx">chưa</span><span class="p">?</span><span class="w">                        </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Có</span><span class="w"> </span><span class="nx">index</span><span class="w"> </span><span class="nx">cho</span><span class="w"> </span><span class="nx">WHERE</span><span class="o">/</span><span class="nx">JOIN</span><span class="w"> </span><span class="nx">columns</span><span class="p">?</span><span class="w">                    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Có</span><span class="w"> </span><span class="nx">bị</span><span class="w"> </span><span class="nx">N</span><span class="o">+</span><span class="mi">1</span><span class="w"> </span><span class="nx">query</span><span class="w"> </span><span class="nx">không</span><span class="p">?</span><span class="w"> </span><span class="p">(</span><span class="nx">Include</span><span class="o">/</span><span class="nx">Join</span><span class="p">)</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">SELECT</span><span class="w"> </span><span class="nx">chỉ</span><span class="w"> </span><span class="nx">columns</span><span class="w"> </span><span class="nx">cần</span><span class="w"> </span><span class="nx">thiết</span><span class="p">?</span><span class="w">                      </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Connection</span><span class="w"> </span><span class="nx">pool</span><span class="w"> </span><span class="nx">size</span><span class="w"> </span><span class="nx">hợp</span><span class="w"> </span><span class="nx">lý</span><span class="p">?</span><span class="w">                       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">□</span><span class="w"> </span><span class="mi">3</span><span class="p">.</span><span class="w"> </span><span class="nx">Cache</span><span class="w"> </span><span class="nx">những</span><span class="w"> </span><span class="nx">gì</span><span class="w"> </span><span class="nx">cần</span><span class="w"> </span><span class="nx">cache</span><span class="w"> </span><span class="nx">chưa</span><span class="p">?</span><span class="w">                       </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Redis</span><span class="w"> </span><span class="nx">cho</span><span class="w"> </span><span class="nx">hot</span><span class="w"> </span><span class="nx">data</span><span class="p">?</span><span class="w">                                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">In</span><span class="o">-</span><span class="nx">memory</span><span class="w"> </span><span class="nx">cache</span><span class="w"> </span><span class="nx">cho</span><span class="w"> </span><span class="nx">static</span><span class="w"> </span><span class="nx">data</span><span class="p">?</span><span class="w">                    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Response</span><span class="w"> </span><span class="nx">caching</span><span class="w"> </span><span class="nx">cho</span><span class="w"> </span><span class="nx">GET</span><span class="w"> </span><span class="nx">endpoints</span><span class="p">?</span><span class="w">                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">□</span><span class="w"> </span><span class="mi">4</span><span class="p">.</span><span class="w"> </span><span class="nx">Bottleneck</span><span class="w"> </span><span class="nx">ở</span><span class="w"> </span><span class="nx">đâu</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="nx">CPU</span><span class="w"> </span><span class="nx">hay</span><span class="w"> </span><span class="nx">I</span><span class="o">/</span><span class="nx">O</span><span class="p">?</span><span class="w">                     </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">CPU</span><span class="w"> </span><span class="nx">cao</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">I</span><span class="o">/</span><span class="nx">O</span><span class="w"> </span><span class="nx">thấp</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">CPU</span><span class="o">-</span><span class="nx">bound</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">có</span><span class="w"> </span><span class="nx">thể</span><span class="w"> </span><span class="nx">vertical</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">CPU</span><span class="w"> </span><span class="nx">thấp</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">I</span><span class="o">/</span><span class="nx">O</span><span class="w"> </span><span class="nx">chờ</span><span class="w"> </span><span class="nx">lâu</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">I</span><span class="o">/</span><span class="nx">O</span><span class="o">-</span><span class="nx">bound</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">fix</span><span class="w"> </span><span class="nx">query</span><span class="o">/</span><span class="w">    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">          </span><span class="nx">cache</span><span class="w"> </span><span class="nx">trước</span><span class="p">,</span><span class="w"> </span><span class="nx">horizontal</span><span class="w"> </span><span class="nx">SAU</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">CPU</span><span class="w"> </span><span class="nx">cao</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">I</span><span class="o">/</span><span class="nx">O</span><span class="w"> </span><span class="nx">cao</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">quá</span><span class="w"> </span><span class="nx">tải</span><span class="w"> </span><span class="nx">thật</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">horizontal</span><span class="w"> </span><span class="nx">OK</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">□</span><span class="w"> </span><span class="mi">5</span><span class="p">.</span><span class="w"> </span><span class="nx">TẤT</span><span class="w"> </span><span class="nx">CẢ</span><span class="w"> </span><span class="nx">trên</span><span class="w"> </span><span class="nx">OK</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Scale</span><span class="w"> </span><span class="nx">horizontal</span><span class="p">!</span><span class="w">                  </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Tính</span><span class="w"> </span><span class="nx">pods</span><span class="w"> </span><span class="nx">cần</span><span class="w"> </span><span class="nx">bao</span><span class="w"> </span><span class="nx">nhiêu</span><span class="w">                             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Check</span><span class="w"> </span><span class="nx">DB</span><span class="w"> </span><span class="nx">connection</span><span class="w"> </span><span class="nx">limits</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">        </span><span class="err">→</span><span class="w"> </span><span class="nx">Set</span><span class="w"> </span><span class="nx">HPA</span><span class="w"> </span><span class="nx">min</span><span class="o">/</span><span class="nx">max</span><span class="w"> </span><span class="nx">hợp</span><span class="w"> </span><span class="nx">lý</span><span class="w">                             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="err">⚠️</span><span class="w">  </span><span class="nx">SKIP</span><span class="w"> </span><span class="nx">checklist</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">mời</span><span class="w"> </span><span class="nx">Death</span><span class="w"> </span><span class="nx">Spiral</span><span class="w"> </span><span class="nx">vào</span><span class="w"> </span><span class="nx">nhà</span><span class="w">             </span><span class="err">│</span>
+<span class="err">└──────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<hr />
+<h2 id="bang-sai-lam-pho-bien">❌ Bảng sai lầm phổ biến</h2>
+<table>
+<thead>
+<tr>
+<th>Sai lầm</th>
+<th>Tại sao sai?</th>
+<th>Đúng ra là</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>API chậm → thêm pod</strong></td>
+<td>1 request vẫn chậm trên 10 pods. 10 quán nấu, 1 tô vẫn 5 phút!</td>
+<td>Fix code/query TRƯỚC</td>
+</tr>
+<tr>
+<td><strong>Mỗi pod 2 core 2GB</strong></td>
+<td>Phí phạm cho I/O-bound API. Như thuê mặt bằng 200m² để bán phở take-away</td>
+<td>0.25-0.5 core, 256-512MB</td>
+</tr>
+<tr>
+<td><strong>minReplicas: 1</strong></td>
+<td>Pod chết = downtime. 1 quán = không có backup</td>
+<td>Min 2 cho HA</td>
+</tr>
+<tr>
+<td><strong>maxReplicas: 100</strong></td>
+<td>100 pods × 10 connections = 1000 → DB chết!</td>
+<td>Tính dựa trên DB connection limit</td>
+</tr>
+<tr>
+<td><strong>Không set limits</strong></td>
+<td>Pod ăn hết RAM của node → node crash → tất cả pod trên node chết</td>
+<td><strong>LUÔN</strong> set limits</td>
+</tr>
+<tr>
+<td><strong>Chỉ scale CPU, quên memory</strong></td>
+<td>Memory leak → OOM → pod restart liên tục</td>
+<td>Monitor cả CPU lẫn memory</td>
+</tr>
+<tr>
+<td><strong>Scale trước, optimize sau</strong></td>
+<td>Tốn tiền gấp 5 cho vấn đề giải quyết bằng 1 dòng index</td>
+<td>Optimize TRƯỚC, scale SAU</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="bai-tap-so-sanh-nhanh">🧩 Bài tập so sánh nhanh</h2>
+<div class="codehilite"><pre><span></span><code><span class="err">┌────────────────────────────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">                </span><span class="n">VERTICAL</span><span class="w"> </span><span class="n">vs</span><span class="w"> </span><span class="n">HORIZONTAL</span><span class="w">                          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">                                                                </span><span class="err">│</span>
+<span class="err">│</span><span class="w">              </span><span class="n">Vertical</span><span class="w">          </span><span class="err">│</span><span class="w">       </span><span class="n">Horizontal</span><span class="w">               </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="err">──────────────────────────────┼──────────────────────────────</span><span class="w">  </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Nâng</span><span class="w"> </span><span class="n">cấp</span><span class="w"> </span><span class="n">quán</span><span class="w">                </span><span class="err">│</span><span class="w">  </span><span class="n">Mở</span><span class="w"> </span><span class="n">thêm</span><span class="w"> </span><span class="n">chi</span><span class="w"> </span><span class="n">nhánh</span><span class="w">             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Thêm</span><span class="w"> </span><span class="n">RAM</span><span class="o">/</span><span class="n">CPU</span><span class="w">                 </span><span class="err">│</span><span class="w">  </span><span class="n">Thêm</span><span class="w"> </span><span class="n">pod</span><span class="o">/</span><span class="n">instance</span><span class="w">              </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Có</span><span class="w"> </span><span class="n">trần</span><span class="w"> </span><span class="p">(</span><span class="n">ceiling</span><span class="p">)</span><span class="w">            </span><span class="err">│</span><span class="w">  </span><span class="n">Không</span><span class="w"> </span><span class="n">trần</span><span class="w"> </span><span class="p">(</span><span class="n">lý</span><span class="w"> </span><span class="n">thuyết</span><span class="p">)</span><span class="w">         </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="err">Đơ</span><span class="n">n</span><span class="w"> </span><span class="n">giản</span><span class="p">,</span><span class="w"> </span><span class="n">không</span><span class="w"> </span><span class="err">đổ</span><span class="n">i</span><span class="w"> </span><span class="n">code</span><span class="w">     </span><span class="err">│</span><span class="w">  </span><span class="n">Cần</span><span class="w"> </span><span class="n">stateless</span><span class="p">,</span><span class="w"> </span><span class="nb">load</span><span class="w"> </span><span class="n">balancer</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Chi</span><span class="w"> </span><span class="n">phí</span><span class="w"> </span><span class="n">exponential</span><span class="w">          </span><span class="err">│</span><span class="w">  </span><span class="n">Chi</span><span class="w"> </span><span class="n">phí</span><span class="w"> </span><span class="n">linear</span><span class="w">                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Single</span><span class="w"> </span><span class="n">point</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">failure</span><span class="w">      </span><span class="err">│</span><span class="w">  </span><span class="n">Fault</span><span class="w"> </span><span class="n">tolerant</span><span class="w">                 </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Downtime</span><span class="w"> </span><span class="n">khi</span><span class="w"> </span><span class="n">upgrade</span><span class="w">         </span><span class="err">│</span><span class="w">  </span><span class="n">Zero</span><span class="w"> </span><span class="n">downtime</span><span class="w"> </span><span class="p">(</span><span class="n">rolling</span><span class="w"> </span><span class="n">update</span><span class="p">)</span><span class="w"> </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Fix</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="n">chậm</span><span class="w">           </span><span class="err">│</span><span class="w">  </span><span class="n">Fix</span><span class="w"> </span><span class="n">nhiều</span><span class="w"> </span><span class="n">request</span><span class="w"> </span><span class="err">đồ</span><span class="n">ng</span><span class="w"> </span><span class="n">thời</span><span class="w">    </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Dễ</span><span class="w"> </span><span class="n">debug</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="n">server</span><span class="p">)</span><span class="w">          </span><span class="err">│</span><span class="w">  </span><span class="n">Khó</span><span class="w"> </span><span class="n">hơn</span><span class="w"> </span><span class="p">(</span><span class="n">distributed</span><span class="p">)</span><span class="w">          </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Phù</span><span class="w"> </span><span class="n">hợp</span><span class="p">:</span><span class="w"> </span><span class="n">dev</span><span class="p">,</span><span class="w"> </span><span class="n">staging</span><span class="w">        </span><span class="err">│</span><span class="w">  </span><span class="n">Phù</span><span class="w"> </span><span class="n">hợp</span><span class="p">:</span><span class="w"> </span><span class="n">production</span><span class="w">            </span><span class="err">│</span>
+<span class="err">└────────────────────────────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<hr />
+<h2 id="active-recall-tu-kiem-tra">🧠 Active Recall — Tự kiểm tra</h2>
+<p>Che đáp án bên dưới, trả lời trước rồi mới check!</p>
+<h3 id="cau-hoi">Câu hỏi</h3>
+<ol>
+<li>
+<p><strong>API mỗi request mất 5 giây, nên thêm pod hay fix code?</strong></p>
+</li>
+<li>
+<p><strong>Vertical scaling giống gì trong ẩn dụ quán phở?</strong></p>
+</li>
+<li>
+<p><strong>Tại sao maxReplicas: 100 có thể giết DB?</strong></p>
+</li>
+<li>
+<p><strong>200 req/s peak, 50 req/s per pod → mấy pod (cả buffer)?</strong></p>
+</li>
+<li>
+<p><strong>Trước khi scale pod, check 4 thứ gì?</strong></p>
+</li>
+</ol>
+<hr />
+<h3 id="ap-an">Đáp án</h3>
+<details>
+<summary>1. Fix code hay thêm pod?</summary>
+
+**FIX CODE!** 1 request mất 5 giây thì 10 pods vẫn mất 5 giây cho request đó. Thêm pod chỉ giúp khi NHIỀU request đến cùng lúc, không giúp khi 1 request chậm. Như mở thêm quán phở nhưng đầu bếp vẫn nấu 5 phút/tô — thêm quán không giúp khách nhận phở nhanh hơn.
+
+</details>
+
+<details>
+<summary>2. Vertical scaling = ?</summary>
+
+**Nâng cấp quán hiện tại** — bếp to hơn, đầu bếp giỏi hơn, thêm bàn ghế trong CÙNG 1 quán. Tương đương thêm RAM, CPU, SSD cho cùng 1 server.
+
+</details>
+
+<details>
+<summary>3. Tại sao maxReplicas: 100 nguy hiểm?</summary>
+
+Mỗi pod mở connection pool đến DB (ví dụ 10 connections/pod). 100 pods = 1000 DB connections. Hầu hết DB (PostgreSQL, MySQL) có giới hạn max_connections (thường 100-500). Vượt quá → DB từ chối connections → TẤT CẢ pods fail → **Death Spiral**: HPA thấy CPU cao → thêm pods → thêm connections → DB chết nhanh hơn 💀
+
+</details>
+
+<details>
+<summary>4. Tính pods?</summary>
+
+
+<div class="codehilite"><pre><span></span><code>Pods cần = 200 ÷ 50 = 4 pods
++ Buffer 30% = 4 × 1.3 = 5.2 ≈ 6 pods
+
+HPA config: min=2, max=8
+(min=2 cho HA, max=8 cho peak + thêm buffer)
+</code></pre></div>
+
+
+
+</details>
+
+<details>
+<summary>5. Checklist 4 thứ trước khi scale?</summary>
+
+1. **Async/await** đúng chưa? (không sync-over-async, dùng Task.WhenAll)
+2. **Database queries** tối ưu chưa? (index, N+1, connection pool)
+3. **Cache** những gì cần cache chưa? (Redis, in-memory)
+4. **Bottleneck** ở đâu? CPU-bound hay I/O-bound?
+
+Tất cả OK rồi → MỚI scale horizontal!
+
+</details>
+
+<hr />
+<h2 id="takeaway-ghi-nho-cuoi-bai">🔑 Takeaway — Ghi nhớ cuối bài</h2>
+<div class="codehilite"><pre><span></span><code>╔══════════════════════════════════════════════════════════════╗
+║  1. 1 request chậm → FIX CODE, đừng thêm pod               ║
+║  2. Nhiều request quá tải → HORIZONTAL (thêm pod)           ║
+║  3. Pod .NET I/O-bound: 0.25-0.5 core, 256-512MB là đủ     ║
+║  4. LUÔN set resources.requests AND limits                   ║
+║  5. minReplicas ≥ 2 cho HA                                   ║
+║  6. maxReplicas tính theo DB connection limit                ║
+║  7. HPA target CPU 70% (chừa headroom)                      ║
+║  8. OPTIMIZE CODE TRƯỚC → SCALE SAU                         ║
+║  9. Coi chừng Death Spiral: pods ↑ → DB connections ↑ → 💀  ║
+╚══════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<blockquote>
+<p>💬 <em>"Quán phở ngon không phải vì có 100 chi nhánh, mà vì 1 tô phở nấu đã ngon sẵn. Scale code cũng vậy — optimize trước, scale sau."</em></p>
+</blockquote>
+<hr />
+<p><em>Bài tiếp theo: Bài 4 — Caching Strategy: Redis, In-Memory, và khi nào dùng cái gì?</em></p>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>

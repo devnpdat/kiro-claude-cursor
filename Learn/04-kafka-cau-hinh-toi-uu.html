@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 4: Kafka | Phú Đạt Nguyễn</title>
+    <meta name="description" content="Tối ưu cấu hình Kafka cho hệ thống .NET backend: phân tích producer tuning (acks, batching, compression), consumer tuning (session timeout, fetch size), và chiến lược partition hợp lý. Senior .NET dev">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 4: Kafka">
+    <meta property="og:description" content="Tối ưu cấu hình Kafka cho hệ thống .NET backend: phân tích producer tuning (acks, batching, compression), consumer tuning (session timeout, fetch size), và chiến lược partition hợp lý. Senior .NET dev">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/04-kafka-cau-hinh-toi-uu.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 4: Kafka">
+    <meta name="twitter:description" content="Tối ưu cấu hình Kafka cho hệ thống .NET backend: phân tích producer tuning (acks, batching, compression), consumer tuning (session timeout, fetch size), và chiến lược partition hợp lý. Senior .NET dev">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/04-kafka-cau-hinh-toi-uu.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 4: Kafka",
+  "description": "Tối ưu cấu hình Kafka cho hệ thống .NET backend: phân tích producer tuning (acks, batching, compression), consumer tuning (session timeout, fetch size), và chiến lược partition hợp lý. Senior .NET dev",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/04-kafka-cau-hinh-toi-uu.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-4-kafka-cau-hinh-the-nao-cho-toi-uu">Bài 4: Kafka — Cấu hình thế nào cho tối ưu?</h1>
+<blockquote>
+<p>Dành cho: kỹ sư backend .NET 🔧
+Ngày: 2026-07-10
+Chủ đề: Kafka core concepts, producer/consumer tuning, partition strategy
+Ẩn dụ xuyên suốt: 🚌 <strong>Bến xe buýt trung tâm</strong></p>
+</blockquote>
+<hr />
+<h2 id="tong-quan-kafka-la-cai-gi">🎯 Tổng quan — Kafka là cái gì?</h2>
+<p>Hãy tưởng tượng:</p>
+<blockquote>
+<p>Anh có một <strong>bến xe buýt trung tâm</strong>. Các <strong>nhà xe (producer)</strong> đưa khách (message) đến bến. Hành khách lên các <strong>chuyến xe (consumer)</strong> đi đến đích. Quan trọng: <strong>xe đi rồi thì hành khách vẫn ở bến</strong> — chứ không mất theo xe.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>╔══════════════════════════════════════════════════════════════════╗
+║                      BẾN XE BUÝT KAFKA                        ║
+║                                                                ║
+║   🚌 NHÀ XE A ──► ┌──────────────────────┐ ──► 🚌 XE KHÁCH 1  ║
+║   (Producer)      │     KAFKA TOPIC      │     (Consumer A-1)║
+║                   │                      │                    ║
+║   🚌 NHÀ XE B ──► │  [M] [M] [M] [M] [M]│ ──► 🚌 XE KHÁCH 2  ║
+║   (Producer)      │   Lô hành khách       │     (Consumer A-2)║
+║                   │   (Log, bất biến)     │                    ║
+║   🚌 NHÀ XE C ──► └──────────────────────┘ ──► 🚌 XE HÀNG B  ║
+║   (Producer)                                    (Consumer B-1)║
+╚══════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<h3 id="kafka-khong-phai-la-message-queue-thong-thuong">Kafka không phải là "message queue" thông thường</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>RabbitMQ / ActiveMQ</th>
+<th>Kafka</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cơ chế</strong></td>
+<td>Queue — xong là xoá</td>
+<td>Log — giữ message mãi (theo retention)</td>
+</tr>
+<tr>
+<td><strong>Message tồn tại</strong></td>
+<td>Đến khi có consumer đọc</td>
+<td>Có thể giữ 7 ngày / 30 ngày</td>
+</tr>
+<tr>
+<td><strong>Tốc độ</strong></td>
+<td>~vài nghìn msg/s</td>
+<td>~hàng trăm nghìn msg/s</td>
+</tr>
+<tr>
+<td><strong>Replay</strong></td>
+<td>Không — mất rồi là mất</td>
+<td>Có — consumer đọc lại từ đầu được</td>
+</tr>
+<tr>
+<td><strong>Dùng khi</strong></td>
+<td>Cần đảm bảo mỗi msg xử lý 1 lần</td>
+<td>Cần log, streaming, nhiều consumer đọc cùng lúc</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-core-concepts-ai-lam-gi">🧱 1. Core Concepts — Ai làm gì?</h2>
+<h3 id="topic-partition">Topic + Partition</h3>
+<p><strong>Topic</strong> = tuyến xe buýt (VD: <code>order-created</code>, <code>payment-processed</code>).</p>
+<p>Mỗi topic được chia thành <strong>partition</strong> (lane riêng):</p>
+<div class="codehilite"><pre><span></span><code>Topic &quot;order-created&quot;
+┌────────────────────────────────────────────┐
+│  Partition 0: [O1] [O4] [O7] [O10] ...    │ ← Có thứ tự trong partition
+│  Partition 1: [O2] [O5] [O8] [O11] ...    │ ← Có thứ tự trong partition
+│  Partition 2: [O3] [O6] [O9] [O12] ...    │ ← Có thứ tự trong partition
+└────────────────────────────────────────────┘
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Quan trọng</strong>: Kafka chỉ đảm bảo thứ tự <strong>trong cùng 1 partition</strong>, không đảm bảo giữa các partition.</p>
+</blockquote>
+<p>Muốn đảm bảo thứ tự cho 1 order → dùng <strong>partition key</strong> = orderId → tất cả message của order đó vào 1 partition.</p>
+<h3 id="offset">Offset</h3>
+<p>Mỗi message trong partition có 1 số thứ tự gọi là <strong>offset</strong> — đánh số từ 0, 1, 2...</p>
+<p>Consumer giữ <strong>offset hiện tại</strong> để biết đã đọc tới đâu. Nếu consumer crash, nó đọc lại từ offset cũ.</p>
+<h3 id="consumer-group">Consumer Group</h3>
+<p>Nhiều consumer có cùng group ID = <strong>1 nhóm</strong>. Kafka chia partition cho các consumer trong nhóm:</p>
+<div class="codehilite"><pre><span></span><code>                    ┌──────────────────────┐
+  Producer ──────►   │  Topic (3 partitions) │
+                    └──────────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+    ┌──────────┐       ┌──────────┐       ┌──────────┐
+    │Consumer A│       │Consumer B│       │Consumer C│
+    │ (Part 0) │       │ (Part 1) │       │ (Part 2) │
+    └──────────┘       └──────────┘       └──────────┘
+    ▲                                                
+    └── Tất cả cùng group &quot;order-processor&quot;
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ Nếu có 3 partition mà anh có 5 consumer → 2 consumer <strong>ngồi chơi</strong>, không làm gì.</p>
+<p><strong>Rule</strong>: Số consumer trong 1 group <strong>không nên vượt quá</strong> số partition.</p>
+</blockquote>
+<hr />
+<h2 id="2-cau-hinh-producer-lam-sao-gui-nhanh-an-toan">⚙️ 2. Cấu hình Producer — Làm sao gửi nhanh + an toàn?</h2>
+<h3 id="a-acks-o-an-toan-khi-ghi">a) <code>acks</code> — Độ an toàn khi ghi</h3>
+<table>
+<thead>
+<tr>
+<th>acks</th>
+<th>Ý nghĩa</th>
+<th>Tốc độ</th>
+<th>Rủi ro</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>Gửi xong không chờ confirm</td>
+<td>🚀 Nhanh nhất</td>
+<td>🔴 Mất msg nếu broker crash</td>
+</tr>
+<tr>
+<td><code>1</code> (default)</td>
+<td>Leader partition ghi xong là OK</td>
+<td>🚶 Bình thường</td>
+<td>🟡 Mất msg nếu leader chưa kịp replicate</td>
+</tr>
+<tr>
+<td><code>all</code> (-1)</td>
+<td>Tất cả ISR (in-sync replicas) ghi xong mới OK</td>
+<td>🐢 Chậm nhất</td>
+<td>🟢 An toàn tuyệt đối</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Khuyên anh</strong>: dùng <code>acks=all</code> cho dữ liệu quan trọng (payment, order). Dùng <code>acks=1</code> cho log, audit tracking.</p>
+</blockquote>
+<h3 id="b-batchsize-lingerms-gui-don-e-tang-toc">b) <code>batch.size</code> + <code>linger.ms</code> — Gửi dồn để tăng tốc</h3>
+<p>Mặc định mỗi lần gửi 1 message → tốn network overhead. Kafka cho phép <strong>gộp nhiều message</strong> vào 1 batch:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Producer config trong .NET</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ProducerConfig</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">BootstrapServers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;kafka:9092&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">Acks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Acks</span><span class="p">.</span><span class="n">All</span><span class="p">,</span>
+
+<span class="w">    </span><span class="c1">// Gộp tối đa 16KB trước khi gửi</span>
+<span class="w">    </span><span class="n">BatchSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16384</span><span class="p">,</span><span class="w">  </span><span class="c1">// 16 KB (default 16KB)</span>
+
+<span class="w">    </span><span class="c1">// Chờ tối đa 5ms để gộp thêm message</span>
+<span class="w">    </span><span class="n">LingerMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w">       </span><span class="c1">// default 0 = gửi ngay</span>
+
+<span class="w">    </span><span class="c1">// Nén dữ liệu</span>
+<span class="w">    </span><span class="n">CompressionType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CompressionType</span><span class="p">.</span><span class="n">Snappy</span>
+<span class="p">};</span>
+</code></pre></div>
+
+<ul>
+<li><code>batch.size</code> lớn hơn → gửi ít lần hơn → <strong>throughput cao hơn</strong></li>
+<li><code>linger.ms</code> cao hơn → dồn được nhiều hơn nhưng <strong>tăng latency</strong></li>
+<li><code>CompressionType.Snappy</code>: giảm ~60-70% dung lượng, CPU cost thấp</li>
+</ul>
+<blockquote>
+<p><strong>Ví dụ thực tế</strong>: Khi push batch trạng thái đơn hàng, set <code>linger.ms=10</code> để gom nhiều event cùng lúc → giảm tải cho Kafka.</p>
+</blockquote>
+<h3 id="c-idempotence-gui-trung-message">c) <code>idempotence</code> — Gửi trùng message</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">EnableIdempotence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span><span class="w">  </span><span class="c1">// Đảm bảo không gửi trùng dù retry</span>
+</code></pre></div>
+
+<p>Kết hợp với <code>acks=all</code> → <strong>Exactly-Once semantics</strong> cho producer.</p>
+<hr />
+<h2 id="3-cau-hinh-consumer-oc-nhanh-khong-bo-sot">⚙️ 3. Cấu hình Consumer — Đọc nhanh, không bỏ sót</h2>
+<h3 id="a-enableautocommit-tu-ong-commit-offset">a) <code>enable.auto.commit</code> — Tự động commit offset?</h3>
+<div class="codehilite"><pre><span></span><code><span class="kt">var</span><span class="w"> </span><span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ConsumerConfig</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">BootstrapServers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;kafka:9092&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">GroupId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;order-processor&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">EnableAutoCommit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w">  </span><span class="c1">// Tự commit hay không?</span>
+<span class="w">    </span><span class="n">AutoOffsetReset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AutoOffsetReset</span><span class="p">.</span><span class="n">Earliest</span><span class="w">  </span><span class="c1">// Bắt đầu từ đầu nếu chưa có offset</span>
+<span class="p">};</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>enable.auto.commit</th>
+<th>Ưu</th>
+<th>Nhược</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>true</code> (default)</td>
+<td>Đơn giản, không cần code tay</td>
+<td>Có thể commit trước khi xử lý xong → mất message nếu crash</td>
+</tr>
+<tr>
+<td><code>false</code></td>
+<td>An toàn, chủ động kiểm soát</td>
+<td>Phải gọi <code>.Commit()</code> bằng tay</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Khuyên anh</strong>: dùng <code>false</code>, commit <strong>sau khi</strong> xử lý xong:</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="k">true</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">consumer</span><span class="p">.</span><span class="n">Consume</span><span class="p">(</span><span class="n">cancellationToken</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="n">_orderService</span><span class="p">.</span><span class="n">ProcessAsync</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">Message</span><span class="p">.</span><span class="n">Value</span><span class="p">,</span><span class="w"> </span><span class="n">cancellationToken</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// CHỈ commit sau khi xử lý THÀNH CÔNG</span>
+<span class="w">    </span><span class="n">consumer</span><span class="p">.</span><span class="n">Commit</span><span class="p">(</span><span class="n">result</span><span class="p">);</span><span class="w">  </span><span class="c1">// commit offset cụ thể</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="b-maxpollintervalms-consumer-chet-gia">b) <code>max.poll.interval.ms</code> — Consumer "chết giả"</h3>
+<p>Consumer phải gửi heartbeat về Kafka định kỳ. Nếu không gửi trong <code>max.poll.interval.ms</code> (default 5 phút), Kafka nghĩ nó chết → <strong>rebalance</strong> (chia lại partition cho consumer khác).</p>
+<blockquote>
+<p>⚠️ <strong>Death trap</strong>: Nếu xử lý 1 message lâu hơn 5 phút (VD: gọi API chậm, batch insert 100k records), consumer bị đá ra khỏi group!</p>
+</blockquote>
+<p><strong>Giải pháp:</strong>
+1. Tăng <code>max.poll.interval.ms</code> nếu xử lý thực sự lâu
+2. Hoặc <strong>tách</strong>: consumer chỉ đọc message, push vào queue trong process, worker khác xử lý</p>
+<h3 id="c-fetchminbytes-maxpartitionfetchbytes-consumer-prefetch">c) <code>fetch.min.bytes</code> + <code>max.partition.fetch.bytes</code> — Consumer prefetch</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Chỉ fetch khi có ít nhất 1KB dữ liệu</span>
+<span class="n">FetchMinBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1024</span><span class="p">,</span><span class="w">        </span><span class="c1">// default 1</span>
+<span class="c1">// Chờ tối đa 500ms nếu chưa đủ dữ liệu</span>
+<span class="n">FetchMaxWaitMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span><span class="w">        </span><span class="c1">// default 500</span>
+
+<span class="c1">// Mỗi lần fetch tối đa 1MB cho 1 partition</span>
+<span class="n">MaxPartitionFetchBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1048576</span><span class="w">  </span><span class="c1">// default 1MB</span>
+</code></pre></div>
+
+<p>Tăng <code>fetch.min.bytes</code> → ít lần fetch hơn → CPU thấp hơn, nhưng latency cao hơn.</p>
+<hr />
+<h2 id="4-partition-strategy-at-bao-nhieu-partition">🎯 4. Partition Strategy — Đặt bao nhiêu partition?</h2>
+<h3 id="cong-thuc-tong-quat">Công thức tổng quát</h3>
+<div class="codehilite"><pre><span></span><code>Số partition = Số consumer tối đa trong group × hệ số parallel
+</code></pre></div>
+
+<p><strong>Ví dụ thực tế:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Kịch bản</th>
+<th>Số partition</th>
+<th>Lý do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hệ thống xử lý đơn hàng: event order</td>
+<td>6</td>
+<td>3 consumer × 2 (dự phòng scale)</td>
+</tr>
+<tr>
+<td>Log system (log 1tr msg/s)</td>
+<td>24</td>
+<td>8 broker × 3 partition/broker</td>
+</tr>
+<tr>
+<td>Payment (cần thứ tự theo order)</td>
+<td>12</td>
+<td>6 consumer, dùng key=orderId</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Không đặt partition quá nhiều</strong>!
+- Mỗi partition = 1 file log + 1 thread trên broker
+- Quá nhiều → file handle, memory, và <strong>rebalance lâu</strong>
+- Rule of thumb: Max 1000 partition/broker, không quá 20000/cluster</p>
+</blockquote>
+<h3 id="cach-chon-partition-key">Cách chọn partition key</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Data class</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">OrderEvent</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">OrderId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w">   </span><span class="c1">// -&gt; Dùng làm key</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="n">EventType</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="c1">// Created, Paid, Shipped</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">DateTime</span><span class="w"> </span><span class="n">OccurredAt</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Producer: dùng OrderId làm key</span>
+<span class="k">await</span><span class="w"> </span><span class="n">producer</span><span class="p">.</span><span class="n">ProduceAsync</span><span class="p">(</span><span class="s">&quot;order-events&quot;</span><span class="p">,</span><span class="w"> </span>
+<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">Message</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="n">OrderEvent</span><span class="o">&gt;</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">Key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orderEvent</span><span class="p">.</span><span class="n">OrderId</span><span class="p">,</span><span class="w">      </span><span class="c1">// KEY quan trọng!</span>
+<span class="w">        </span><span class="n">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">orderEvent</span>
+<span class="w">    </span><span class="p">});</span>
+</code></pre></div>
+
+<p>Với key = OrderId → tất cả event của 1 order vào <strong>cùng 1 partition</strong> → giữ đúng thứ tự.</p>
+<hr />
+<h2 id="5-kafka-trong-ung-dung-cau-hinh-thuc-te">🔁 5. Kafka trong ứng dụng — Cấu hình thực tế</h2>
+<p>Giả sử ứng dụng e-commerce dùng Kafka cho:
+- <code>order-return-created</code>: khi khách tạo yêu cầu trả hàng
+- <code>order-return-approved</code>: khi duyệt trả
+- <code>order-return-received</code>: khi kho nhận hàng</p>
+<h3 id="producer-config-ghi-event">Producer config (ghi event)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="p">.</span><span class="n">AddSingleton</span><span class="o">&lt;</span><span class="n">IProducer</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="n">OrderReturnEvent</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">ProducerBuilder</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="n">OrderReturnEvent</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ProducerConfig</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">BootstrapServers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_config</span><span class="p">[</span><span class="s">&quot;Kafka:BootstrapServers&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="n">Acks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Acks</span><span class="p">.</span><span class="n">All</span><span class="p">,</span>
+<span class="w">        </span><span class="n">EnableIdempotence</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="n">BatchSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16384</span><span class="p">,</span>
+<span class="w">        </span><span class="n">LingerMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span>
+<span class="w">        </span><span class="n">CompressionType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CompressionType</span><span class="p">.</span><span class="n">Snappy</span><span class="p">,</span>
+<span class="w">        </span><span class="n">MessageSendMaxRetries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">        </span><span class="n">RetryBackoffMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1000</span>
+<span class="w">    </span><span class="p">}).</span><span class="n">Build</span><span class="p">());</span>
+</code></pre></div>
+
+<h3 id="consumer-config-xu-ly-event">Consumer config (xử lý event)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="p">.</span><span class="n">AddSingleton</span><span class="o">&lt;</span><span class="n">IConsumer</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="n">OrderReturnEvent</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">_</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">ConsumerBuilder</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="n">OrderReturnEvent</span><span class="o">&gt;</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ConsumerConfig</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">BootstrapServers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">_config</span><span class="p">[</span><span class="s">&quot;Kafka:BootstrapServers&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="n">GroupId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;order-processor&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">EnableAutoCommit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">        </span><span class="n">AutoOffsetReset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AutoOffsetReset</span><span class="p">.</span><span class="n">Earliest</span><span class="p">,</span>
+<span class="w">        </span><span class="n">MaxPollIntervalMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">300000</span><span class="p">,</span><span class="w">  </span><span class="c1">// 5 phút</span>
+<span class="w">        </span><span class="n">FetchMinBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">512</span><span class="p">,</span>
+<span class="w">        </span><span class="n">FetchMaxWaitMs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span>
+<span class="w">        </span><span class="n">MaxPartitionFetchBytes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">524288</span><span class="w">  </span><span class="c1">// 512KB</span>
+<span class="w">    </span><span class="p">}).</span><span class="n">Build</span><span class="p">());</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-monitoring-cac-chi-so-phai-theo-doi">📊 6. Monitoring — Các chỉ số phải theo dõi</h2>
+<h3 id="consumer-lag-quan-trong-nhat">Consumer Lag — QUAN TRỌNG NHẤT</h3>
+<div class="codehilite"><pre><span></span><code>Producer: ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ (offset 100)
+Consumer: ■ ■ ■ ■ ■ ■ ■ ■ ■ ■ □ □ □ □ □ □ □ □ (offset 45)
+                                 └── LAG = 55 messages
+</code></pre></div>
+
+<p><strong>Lag</strong> = số message chưa được xử lý. Nếu lag tăng mãi → <strong>hệ thống đang quá tải</strong> hoặc consumer tèo.</p>
+<p>Cách kiểm tra:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Dùng kafka-consumer-groups</span>
+kafka-consumer-groups<span class="w"> </span>--bootstrap-server<span class="w"> </span>kafka:9092<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--group<span class="w"> </span>order-processor<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--describe
+</code></pre></div>
+
+<p>Output:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">GROUP</span>                     <span class="n">TOPIC</span>              <span class="n">PARTITION</span>  <span class="n">CURRENT</span><span class="o">-</span><span class="n">OFFSET</span>  <span class="n">LOG</span><span class="o">-</span><span class="kr">END</span><span class="o">-</span><span class="n">OFFSET</span>  <span class="n">LAG</span>
+<span class="n">order</span><span class="o">-</span><span class="n">processor</span> <span class="n">order</span><span class="o">-</span><span class="n">return</span><span class="o">-</span><span class="n">created</span> <span class="mi">0</span>          <span class="mi">45</span>              <span class="mi">100</span>             <span class="mi">55</span>
+<span class="n">order</span><span class="o">-</span><span class="n">processor</span> <span class="n">order</span><span class="o">-</span><span class="n">return</span><span class="o">-</span><span class="n">created</span> <span class="mi">1</span>          <span class="mi">30</span>              <span class="mi">80</span>              <span class="mi">50</span>
+</code></pre></div>
+
+<h3 id="cac-metrics-khac">Các metrics khác</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Ý nghĩa</th>
+<th>Cảnh báo khi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Bytes-in / bytes-out</strong></td>
+<td>Throughput</td>
+<td>Bất thường tăng/giảm đột ngột</td>
+</tr>
+<tr>
+<td><strong>Total time / request</strong></td>
+<td>Latency producer</td>
+<td>&gt; 100ms</td>
+</tr>
+<tr>
+<td><strong>Failed fetch / produce</strong></td>
+<td>Lỗi kết nối</td>
+<td>&gt; 0.1%</td>
+</tr>
+<tr>
+<td><strong>Under-replicated partitions</strong></td>
+<td>Partition thiếu replica</td>
+<td>&gt; 0</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-death-spiral-khi-consumer-bi-lag-mai-mai">🚨 7. Death Spiral — Khi consumer bị "lag mãi mãi"</h2>
+<p>Đây là cái bẫy kinh điển:</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Consumer</span><span class="w"> </span><span class="n">xử</span><span class="w"> </span><span class="n">lý</span><span class="w"> </span><span class="n">chậm</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Lag</span><span class="w"> </span><span class="n">tăng</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">Lag</span><span class="w"> </span><span class="n">tăng</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Consumer</span><span class="w"> </span><span class="n">cố</span><span class="w"> </span><span class="n">poll</span><span class="w"> </span><span class="n">nhiều</span><span class="w"> </span><span class="n">hơn</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">Poll</span><span class="w"> </span><span class="n">nhiều</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Process</span><span class="w"> </span><span class="n">càng</span><span class="w"> </span><span class="n">chậm</span><span class="w">  </span>
+<span class="mf">4.</span><span class="w"> </span><span class="n">Chậm</span><span class="w"> </span><span class="n">quá</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Heartbeat</span><span class="w"> </span><span class="n">timeout</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Consumer</span><span class="w"> </span><span class="n">bị</span><span class="w"> </span><span class="n">rebalance</span>
+<span class="mf">5.</span><span class="w"> </span><span class="n">Rebalance</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Tất</span><span class="w"> </span><span class="n">cả</span><span class="w"> </span><span class="n">consumer</span><span class="w"> </span><span class="n">ngừng</span><span class="w"> </span><span class="n">xử</span><span class="w"> </span><span class="n">lý</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Lag</span><span class="w"> </span><span class="n">tăng</span><span class="w"> </span><span class="n">vọt</span>
+<span class="mf">6.</span><span class="w"> </span><span class="err">🔄</span><span class="w"> </span><span class="n">Lặp</span><span class="w"> </span><span class="n">lại</span><span class="p">,</span><span class="w"> </span><span class="n">ngày</span><span class="w"> </span><span class="n">càng</span><span class="w"> </span><span class="n">tệ</span><span class="w"> </span><span class="n">hơn</span>
+</code></pre></div>
+
+<h3 id="cach-pha-vong-luan-quan">Cách phá vòng luẩn quẩn</h3>
+<ol>
+<li><strong>Tách consumer khỏi xử lý</strong>:</li>
+<li>Consumer chỉ đọc message → push vào channel/queue</li>
+<li>
+<p>Worker riêng xử lý async</p>
+</li>
+<li>
+<p><strong>Circuit breaker</strong>: nếu lag &gt; ngưỡng → tạm dừng consumer, xử lý hết backlog rồi mới poll tiếp</p>
+</li>
+<li>
+<p><strong>Auto-scale consumer</strong>: dùng lag metric để HPA consumer pod (nếu partition còn dư)</p>
+</li>
+</ol>
+<hr />
+<h2 id="tong-ket-checklist-khi-dung-kafka">✅ Tổng kết — Checklist khi dùng Kafka</h2>
+<table>
+<thead>
+<tr>
+<th>Việc</th>
+<th>Nên làm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Xác định số partition</td>
+<td><code>số consumer max × 2</code>, không quá 1000/broker</td>
+</tr>
+<tr>
+<td>Partition key</td>
+<td>Dùng key để message cùng order vào 1 partition</td>
+</tr>
+<tr>
+<td><code>acks</code></td>
+<td><code>all</code> cho quan trọng, <code>1</code> cho log</td>
+</tr>
+<tr>
+<td><code>enable.idempotence</code></td>
+<td><code>true</code> nếu dùng <code>acks=all</code></td>
+</tr>
+<tr>
+<td><code>enable.auto.commit</code></td>
+<td><code>false</code> — commit tay sau khi xử lý</td>
+</tr>
+<tr>
+<td><code>max.poll.interval.ms</code></td>
+<td>Tăng nếu xử lý message lâu</td>
+</tr>
+<tr>
+<td>Compression</td>
+<td>Snappy hoặc Zstd</td>
+</tr>
+<tr>
+<td>Monitor lag</td>
+<td><strong>Bắt buộc</strong> — cảnh báo khi lag &gt; 1000</td>
+</tr>
+<tr>
+<td>Rebalance timeout</td>
+<td><code>session.timeout.ms</code> = 10s (default 45s)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="active-recall-kiem-tra-tri-nho">🧪 Active Recall — Kiểm tra trí nhớ</h2>
+<details>
+<summary><strong>1️⃣ Kafka khác RabbitMQ chỗ nào?</strong></summary>
+
+Kafka là **log-based** (giữ message mãi theo retention), không phải queue (xoá sau khi đọc). Cho phép replay, nhiều consumer group đọc cùng lúc, throughput cao hơn nhiều.
+</details>
+
+<details>
+<summary><strong>2️⃣ Làm sao đảm bảo message của 1 order đến đúng thứ tự?</strong></summary>
+
+Dùng **partition key = orderId**. Cùng key → cùng partition → Kafka đảm bảo thứ tự trong 1 partition.
+</details>
+
+<details>
+<summary><strong>3️⃣ Nếu có 6 partition, 10 consumer trong 1 group thì chuyện gì xảy ra?</strong></summary>
+
+6 partition → tối đa 6 consumer active. 4 consumer còn lại **ngồi chơi xơi nước**, không nhận message nào.
+</details>
+
+<details>
+<summary><strong>4️⃣ Khi nào dùng `acks=all`?</strong></summary>
+
+Khi không thể mất message: payment, order, critical business event. Chậm hơn nhưng an toàn.
+</details>
+
+<details>
+<summary><strong>5️⃣ Consumer lag là gì? Tại sao phải monitor?</strong></summary>
+
+Lag = số message chưa xử lý. Nếu lag tăng mãi → consumer không theo kịp producer → backlog càng ngày càng lớn, có thể dẫn đến rebalance death spiral.
+</details>
+
+<details>
+<summary><strong>6️⃣ Công thức tính số partition?</strong></summary>
+
+`Số partition = Số consumer tối đa × 2` (dư ra để scale). Không quá 1000 partition/broker.
+</details>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>

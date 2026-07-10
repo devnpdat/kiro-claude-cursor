@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 5: Database Performance | Phú Đạt Nguyễn</title>
+    <meta name="description" content="Chiến lược tối ưu SQL Server cho senior .NET backend engineer: cách chọn index phù hợp (clustered vs non-clustered), đọc execution query plan, và tinh chỉnh connection pool để tránh thắt cổ chai datab">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 5: Database Performance">
+    <meta property="og:description" content="Chiến lược tối ưu SQL Server cho senior .NET backend engineer: cách chọn index phù hợp (clustered vs non-clustered), đọc execution query plan, và tinh chỉnh connection pool để tránh thắt cổ chai datab">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/05-database-performance-index-query-plan.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 5: Database Performance">
+    <meta name="twitter:description" content="Chiến lược tối ưu SQL Server cho senior .NET backend engineer: cách chọn index phù hợp (clustered vs non-clustered), đọc execution query plan, và tinh chỉnh connection pool để tránh thắt cổ chai datab">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/05-database-performance-index-query-plan.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 5: Database Performance",
+  "description": "Chiến lược tối ưu SQL Server cho senior .NET backend engineer: cách chọn index phù hợp (clustered vs non-clustered), đọc execution query plan, và tinh chỉnh connection pool để tránh thắt cổ chai datab",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/05-database-performance-index-query-plan.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-5-database-performance-index-query-plan-connection-pool">Bài 5: Database Performance — Index, Query Plan, Connection Pool</h1>
+<blockquote>
+<p>Dành cho: kỹ sư backend .NET 🔧
+Ngày: 2026-07-10
+Chủ đề: SQL Server index, đọc query plan, tối ưu connection pool
+Ẩn dụ xuyên suốt: 📚 <strong>Thư viện sách</strong></p>
+</blockquote>
+<hr />
+<h2 id="tong-quan-80-cham-la-do-database">🎯 Tổng quan — 80% chậm là do Database</h2>
+<p>Trong hệ thống .NET backend, <strong>database thường là bottleneck số 1</strong>. Code có nhanh cỡ nào, async có xịn cỡ nào, mà query database chậm thì tất cả đều vô nghĩa.</p>
+<div class="codehilite"><pre><span></span><code>Request đến
+    │
+    ▼
+┌─────────────┐     ┌──────────────────┐
+│ Controller   │────►│ Business Logic   │────► Database
+│ (nhanh)      │     │ (nhanh)          │     │
+└─────────────┘     └──────────────────┘     │
+                                              ▼
+                                      ┌────────────────┐
+                                      │ Query mất 2 giây│ ← Bottleneck thật sự
+                                      └────────────────┘
+</code></pre></div>
+
+<p>3 vấn đề chính anh cần hiểu:
+1. <strong>Index</strong> — Tra sách có mục lục hay không?
+2. <strong>Query Plan</strong> — SQL Server thực sự chạy câu query thế nào?
+3. <strong>Connection Pool</strong> — Bao nhiêu kết nối là đủ?</p>
+<hr />
+<h2 id="1-index-muc-luc-cua-thu-vien">📐 1. Index — Mục lục của thư viện</h2>
+<h3 id="clustered-index-sach-uoc-sap-xep">Clustered Index — Sách được sắp xếp</h3>
+<p>Tưởng tượng thư viện xếp sách <strong>theo số ISBN</strong> (tăng dần). Cần tìm sách ISBN=12345, anh đi thẳng đến kệ đó, lấy ngay.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Mặc định: PK = Clustered Index</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">OrderId</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">  </span><span class="c1">-- ← Tự động tạo Clustered Index</span>
+<span class="w">    </span><span class="n">CustomerId</span><span class="w"> </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">TotalAmount</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">CreatedAt</span><span class="w"> </span><span class="n">DATETIME</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<ul>
+<li>Chỉ <strong>1 clustered index / table</strong> (vì chỉ xếp 1 kiểu được)</li>
+<li>Dữ liệu <strong>vật lý</strong> được sắp xếp theo clustered index</li>
+<li>Tìm theo clustered index = <strong>nhanh nhất</strong> (1 lần đọc)</li>
+</ul>
+<h3 id="non-clustered-index-muc-luc-rieng">Non-Clustered Index — Mục lục riêng</h3>
+<p>Anh mua 1 cuốn "Mục lục tra cứu theo tên tác giả" — không phải sắp xếp lại sách, chỉ là 1 quyển sổ nhỏ ghi:</p>
+<div class="codehilite"><pre><span></span><code>&quot;Tác giả Nguyễn Nhật Ánh → Kệ số 3, hàng 5&quot;
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Tạo index để tìm nhanh theo CustomerId</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">NONCLUSTERED</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">IX_Orders_CustomerId</span><span class="w"> </span>
+<span class="k">ON</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="p">(</span><span class="n">CustomerId</span><span class="p">);</span>
+</code></pre></div>
+
+<ul>
+<li>Có thể có <strong>nhiều non-clustered index</strong> / table</li>
+<li>Index là 1 cấu trúc riêng, <strong>không thay đổi</strong> cách lưu dữ liệu gốc</li>
+<li>Tìm theo non-clustered index → tìm trong index (nhanh) → <strong>bookmark lookup</strong> đến dữ liệu thật (có thể chậm nếu bảng lớn)</li>
+</ul>
+<h3 id="composite-index-index-nhieu-cot">Composite Index — Index nhiều cột</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Index trên (CustomerId, CreatedAt)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">NONCLUSTERED</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">IX_Orders_CustomerId_CreatedAt</span><span class="w"> </span>
+<span class="k">ON</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="p">(</span><span class="n">CustomerId</span><span class="p">,</span><span class="w"> </span><span class="n">CreatedAt</span><span class="p">);</span>
+</code></pre></div>
+
+<p>Query sau sẽ dùng index này:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Dùng được index (CustomerId trước)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">CustomerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">CreatedAt</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">;</span>
+
+<span class="c1">-- Dùng được index (chỉ CustomerId thôi cũng được)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">CustomerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+
+<span class="c1">-- ⚠️ KHÔNG dùng được index (CreatedAt đứng trước, nhưng CustomerId không có)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">CreatedAt</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Rule</strong>: Cột đầu tiên trong composite index phải xuất hiện trong WHERE.</p>
+<p>Giống như tra mục lục sách: "Tìm theo Tên → Họ" được, nhưng "Tìm theo Họ" mà sách sắp theo Tên thì không.</p>
+</blockquote>
+<h3 id="covering-index-index-chua-u-du-lieu">Covering Index — Index chứa đủ dữ liệu</h3>
+<p>Nếu query chỉ cần vài cột, index có thể "bao phủ" (cover) query — không cần đụng vào bảng chính:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Query này chỉ cần CustomerId và TotalAmount</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">CustomerId</span><span class="p">,</span><span class="w"> </span><span class="n">TotalAmount</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">CustomerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+
+<span class="c1">-- → Nếu index có cả 2 cột, SQL Server chỉ đọc INDEX, không đọc TABLE</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">NONCLUSTERED</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">IX_Orders_Covering</span><span class="w"> </span>
+<span class="k">ON</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="p">(</span><span class="n">CustomerId</span><span class="p">)</span><span class="w"> </span>
+<span class="n">INCLUDE</span><span class="w"> </span><span class="p">(</span><span class="n">TotalAmount</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">);</span><span class="w">  </span><span class="c1">-- INCLUDE = thêm vào leaf level, không ảnh hưởng sắp xếp</span>
+</code></pre></div>
+
+<p>Covering index = <strong>nhanh nhất</strong> cho query cụ thể đó.</p>
+<h3 id="khi-nao-index-gay-hai">Khi nào index gây hại?</h3>
+<p>Index <strong>tăng tốc SELECT</strong> nhưng <strong>làm chậm INSERT/UPDATE/DELETE</strong> vì SQL Server phải cập nhật cả index lẫn data.</p>
+<table>
+<thead>
+<tr>
+<th>Nếu bảng</th>
+<th>Nên có</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đọc nhiều, ghi ít (tra cứu, báo cáo)</td>
+<td>Nhiều index</td>
+</tr>
+<tr>
+<td>Ghi nhiều, đọc ít (log, audit)</td>
+<td>Ít index, chỉ clustered PK</td>
+</tr>
+<tr>
+<td>Cả đọc và ghi</td>
+<td>Index hợp lý, monitor missing index</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-oc-query-plan-sql-server-chay-query-the-nao">🔍 2. Đọc Query Plan — SQL Server chạy query thế nào?</h2>
+<h3 id="cach-xem-query-plan">Cách xem Query Plan</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Trong SSMS: Bật &quot;Include Actual Execution Plan&quot; (Ctrl+M)</span>
+<span class="c1">-- Hoặc:</span>
+<span class="k">SET</span><span class="w"> </span><span class="k">STATISTICS</span><span class="w"> </span><span class="n">IO</span><span class="w"> </span><span class="k">ON</span><span class="p">;</span>
+<span class="k">SET</span><span class="w"> </span><span class="k">STATISTICS</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ON</span><span class="p">;</span>
+
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">CustomerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
+</code></pre></div>
+
+<h3 id="cac-toan-tu-operator-chinh">Các toán tử (operator) chính</h3>
+<table>
+<thead>
+<tr>
+<th>Operator</th>
+<th>Ý nghĩa</th>
+<th>Tốc độ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Index Seek</strong></td>
+<td>Dò index theo đường dẫn (B-tree)</td>
+<td>⚡ Cực nhanh</td>
+</tr>
+<tr>
+<td><strong>Index Scan</strong></td>
+<td>Quét toàn bộ index (vẫn chậm hơn Seek)</td>
+<td>🚶 Trung bình</td>
+</tr>
+<tr>
+<td><strong>Table Scan</strong></td>
+<td>Quét toàn bộ bảng</td>
+<td>🐢 Cực chậm</td>
+</tr>
+<tr>
+<td><strong>Key Lookup</strong></td>
+<td>Từ index → lấy dòng data trong clustered index</td>
+<td>🚶 Có thể chấp nhận</td>
+</tr>
+<tr>
+<td><strong>RID Lookup</strong></td>
+<td>Từ non-clustered → lấy dòng data trong heap table (không có clustered)</td>
+<td>🐢 Chậm</td>
+</tr>
+<tr>
+<td><strong>Sort</strong></td>
+<td>Sắp xếp</td>
+<td>🐢 Chậm nếu data lớn</td>
+</tr>
+<tr>
+<td><strong>Hash Match</strong></td>
+<td>Nối bảng bằng hash</td>
+<td>🚶 Tạm được</td>
+</tr>
+<tr>
+<td><strong>Nested Loops</strong></td>
+<td>Nối bảng bằng vòng lặp (1 bảng nhỏ, 1 bảng lớn)</td>
+<td>⚡ Nếu bảng trong nhỏ</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cach-oc-oc-tu-phai-sang-tu-tren-xuong">Cách đọc — Đọc từ phải sang, từ trên xuống</h3>
+<div class="codehilite"><pre><span></span><code>  SELECT (Cost: 0%)
+  └── Nested Loops (Cost: 2%)
+       ├── Index Seek (Cost: 48%)  ← Tốn nhất! Tối ưu chỗ này
+       └── Key Lookup (Cost: 50%)  ← Có thể thêm INCLUDE để bỏ lookup
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Cái bẫy</strong>: Nhìn vào operator có cost cao nhất → đó là nơi cần tối ưu.</p>
+</blockquote>
+<h3 id="vi-du-thuc-te-tim-on-hang-cua-khach">Ví dụ thực tế — Tìm đơn hàng của khách</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Query chậm</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">OrderId</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">TotalAmount</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Status</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">CustomerName</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="n">o</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">Customers</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">CustomerId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">CustomerId</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">CreatedAt</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">TotalAmount</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000000</span><span class="p">;</span>
+</code></pre></div>
+
+<p>Nếu không có index trên <code>CreatedAt</code>:</p>
+<div class="codehilite"><pre><span></span><code>|-- Hash Match (vì phải scan cả 2 bảng)
+     |-- Table Scan (Orders)  ← Chậm! 1.5 triệu dòng
+     |-- Table Scan (Customers)
+</code></pre></div>
+
+<p>Thêm index:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">NONCLUSTERED</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">IX_Orders_CreatedAt_Include</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">Orders</span><span class="w"> </span><span class="p">(</span><span class="n">CreatedAt</span><span class="p">)</span>
+<span class="n">INCLUDE</span><span class="w"> </span><span class="p">(</span><span class="n">CustomerId</span><span class="p">,</span><span class="w"> </span><span class="n">TotalAmount</span><span class="p">,</span><span class="w"> </span><span class="n">Status</span><span class="p">);</span>
+</code></pre></div>
+
+<p>Query plan mới:</p>
+<div class="codehilite"><pre><span></span><code>|-- Nested Loops
+     |-- Index Seek (Orders)  ← Chỉ lấy 450 dòng phù hợp
+     |-- Key Lookup (Customers) ← 450 lần, tạm chấp nhận
+</code></pre></div>
+
+<hr />
+<h2 id="3-index-trong-entity-framework-nhung-ieu-can-biet">🔗 3. Index trong Entity Framework — Những điều cần biết</h2>
+<h3 id="ef-core-tao-index-tu-ong">EF Core tạo index tự động</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Entity</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Order</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">Id</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">CustomerId</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">DateTime</span><span class="w"> </span><span class="n">CreatedAt</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Navigation property → EF tự tạo FK index</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="n">Customer</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">get</span><span class="p">;</span><span class="w"> </span><span class="k">set</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>EF Core tự động tạo index cho foreign key <code>CustomerId</code> — tốt.</p>
+<h3 id="custom-index-bang-data-annotation">Custom index bằng Data Annotation</h3>
+<div class="codehilite"><pre><span></span><code><span class="na">[Index(nameof(CreatedAt), nameof(Status))]</span>
+<span class="na">[Index(nameof(CustomerId), IsUnique = false)]</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">Order</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="index-trong-fluent-api">Index trong Fluent API</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">protected</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="k">void</span><span class="w"> </span><span class="nf">OnModelCreating</span><span class="p">(</span><span class="n">ModelBuilder</span><span class="w"> </span><span class="n">modelBuilder</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">modelBuilder</span><span class="p">.</span><span class="n">Entity</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="p">(</span><span class="n">entity</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Composite index</span>
+<span class="w">        </span><span class="n">entity</span><span class="p">.</span><span class="n">HasIndex</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">CustomerId</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">CreatedAt</span><span class="w"> </span><span class="p">})</span>
+<span class="w">              </span><span class="p">.</span><span class="n">HasDatabaseName</span><span class="p">(</span><span class="s">&quot;IX_Orders_CustomerId_CreatedAt&quot;</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Filtered index (SQL Server)</span>
+<span class="w">        </span><span class="n">entity</span><span class="p">.</span><span class="n">HasIndex</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">Status</span><span class="p">)</span>
+<span class="w">              </span><span class="p">.</span><span class="n">HasFilter</span><span class="p">(</span><span class="s">&quot;[Status] = N&#39;Pending&#39;&quot;</span><span class="p">)</span>
+<span class="w">              </span><span class="p">.</span><span class="n">HasDatabaseName</span><span class="p">(</span><span class="s">&quot;IX_Orders_PendingStatus&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote>
+<p>🎯 Filtered index: chỉ index những dòng Pending → index siêu nhỏ → tìm siêu nhanh.</p>
+</blockquote>
+<hr />
+<h2 id="4-connection-pool-be-boi-ket-noi">🌊 4. Connection Pool — "Bể bơi" kết nối</h2>
+<h3 id="van-e">Vấn đề</h3>
+<p>Mỗi lần mở kết nối SQL Server:
+1. TCP handshake (3 bước)
+2. SSL/TLS handshake
+3. Authentication
+4. Session setup</p>
+<p>→ Mất <strong>20-100ms</strong> mỗi lần mở kết nối mới!</p>
+<h3 id="giai-phap-connection-pool">Giải pháp: Connection Pool</h3>
+<p>ADO.NET tự động quản lý pool. Khi anh <code>.Open()</code> → nó lấy từ pool. Khi anh <code>.Close()</code> → nó trả về pool.</p>
+<div class="codehilite"><pre><span></span><code>┌─────────────────────────────────────────┐
+│            Connection Pool              │
+│                                         │
+│  ┌──────┐ ┌──────┐ ┌──────┐           │
+│  │Conn 1│ │Conn 2│ │Conn 3│  ...      │
+│  └──────┘ └──────┘ └──────┘           │
+│                                         │
+└─────────────────────────────────────────┘
+      ▲                          ▲
+      │                          │
+  .Open() ── request ──►    .Close() ── return ──►
+</code></pre></div>
+
+<h3 id="cau-hinh-connection-string">Cấu hình connection string</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># appsettings.json</span>
+<span class="s">&quot;ConnectionStrings&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="p p-Indicator">{</span>
+<span class="w">  </span><span class="s">&quot;DefaultConnection&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;Server=db;Database=ReturnHome;Trusted_Connection=true;</span>
+<span class="w">    </span><span class="s">Min</span><span class="nv"> </span><span class="s">Pool</span><span class="nv"> </span><span class="s">Size=5;</span>
+<span class="w">    </span><span class="s">Max</span><span class="nv"> </span><span class="s">Pool</span><span class="nv"> </span><span class="s">Size=100;</span>
+<span class="w">    </span><span class="s">Connection</span><span class="nv"> </span><span class="s">Lifetime=300;</span>
+<span class="w">    </span><span class="s">Pooling=true&quot;</span>
+<span class="p p-Indicator">}</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Tham số</th>
+<th>Ý nghĩa</th>
+<th>Khuyên anh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Min Pool Size</code></td>
+<td>Luôn giữ ít nhất N kết nối sẵn</td>
+<td>5-10 (tránh cold start)</td>
+</tr>
+<tr>
+<td><code>Max Pool Size</code></td>
+<td>Không mở quá N kết nối</td>
+<td>100-200, tùy RAM server</td>
+</tr>
+<tr>
+<td><code>Connection Lifetime</code></td>
+<td>Đóng kết nối sau N giây</td>
+<td>300 (5 phút) — tránh connection leak từ network layer</td>
+</tr>
+<tr>
+<td><code>Pooling=true</code></td>
+<td>Bật pooling</td>
+<td>Luôn bật</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pool-exhaustion-cai-bay-kinh-ien">Pool Exhaustion — Cái bẫy kinh điển</h3>
+<div class="codehilite"><pre><span></span><code>Request 1: .Open() → lấy conn
+Request 2: .Open() → lấy conn
+...
+Request 101: .Open() → ⚠️ HẾT POOL! (max=100)
+             Chờ... timeout sau 30s → Exception
+</code></pre></div>
+
+<p><strong>Nguyên nhân thường gặp:</strong>
+1. Quên <code>.Dispose()</code> / <code>.Close()</code>
+2. Dùng synchronous <code>Task.Result</code> / <code>.Wait()</code> trên async database call
+3. Transaction dài không commit/rollback
+4. Không dùng <code>using</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ SAI — Quên dispose</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">conn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SqlConnection</span><span class="p">(</span><span class="n">connectionString</span><span class="p">);</span>
+<span class="n">conn</span><span class="p">.</span><span class="n">Open</span><span class="p">();</span>
+<span class="c1">// ... làm gì đó</span>
+<span class="c1">// KHÔNG close → conn ở lại pool đến khi timeout</span>
+
+<span class="c1">// ✅ ĐÚNG — using</span>
+<span class="k">using</span><span class="w"> </span><span class="nn">var</span><span class="w"> </span><span class="n">conn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">SqlConnection</span><span class="p">(</span><span class="n">connectionString</span><span class="p">);</span>
+<span class="k">await</span><span class="w"> </span><span class="n">conn</span><span class="p">.</span><span class="n">OpenAsync</span><span class="p">();</span>
+<span class="c1">// ... xong tự động trả pool</span>
+
+<span class="c1">// ✅ CÁCH 2: try/finally</span>
+<span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">conn</span><span class="p">.</span><span class="n">Open</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+<span class="k">finally</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">conn</span><span class="p">.</span><span class="n">Close</span><span class="p">();</span><span class="w"> </span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="entity-framework-connection-pool">Entity Framework + Connection Pool</h3>
+<p>EF Core dùng connection pool của ADO.NET bên dưới. Nhưng có <strong>bẫy</strong>: mỗi <code>DbContext</code> mới mở 1 connection → cần dùng <code>DbContextFactory</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ❌ SAI trong background job</span>
+<span class="k">using</span><span class="w"> </span><span class="p">(</span><span class="kt">var</span><span class="w"> </span><span class="n">db</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">AppDbContext</span><span class="p">())</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// ... mỗi lần tạo DbContext mới → new connection</span>
+<span class="p">}</span>
+
+<span class="c1">// ✅ ĐÚNG</span>
+<span class="n">services</span><span class="p">.</span><span class="n">AddDbContextPool</span><span class="o">&lt;</span><span class="n">AppDbContext</span><span class="o">&gt;</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">UseSqlServer</span><span class="p">(</span><span class="n">connectionString</span><span class="p">,</span><span class="w"> </span>
+<span class="w">        </span><span class="n">sqlOptions</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">sqlOptions</span><span class="p">.</span><span class="n">MaxBatchSize</span><span class="p">(</span><span class="mi">100</span><span class="p">)));</span>
+</code></pre></div>
+
+<hr />
+<h2 id="5-n1-query-ke-giet-hieu-nang-tham-lang">🎯 5. N+1 Query — Kẻ giết hiệu năng thầm lặng</h2>
+<h3 id="van-e_1">Vấn đề</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Lấy 100 đơn hàng</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_context</span><span class="p">.</span><span class="n">Orders</span><span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="mi">100</span><span class="p">).</span><span class="n">ToListAsync</span><span class="p">();</span>
+
+<span class="k">foreach</span><span class="w"> </span><span class="p">(</span><span class="kt">var</span><span class="w"> </span><span class="n">order</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">orders</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// ❌ Mỗi lần loop = 1 query riêng!</span>
+<span class="w">    </span><span class="n">Console</span><span class="p">.</span><span class="n">WriteLine</span><span class="p">(</span><span class="n">order</span><span class="p">.</span><span class="n">Customer</span><span class="p">.</span><span class="n">Name</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>→ 1 query đầu + 100 query sau = <strong>101 queries</strong>!</p>
+<h3 id="dung-include-eager-loading">Dùng Include (Eager Loading)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ✅ 1 query với JOIN</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_context</span><span class="p">.</span><span class="n">Orders</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Include</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Customer</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Take</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">ToListAsync</span><span class="p">();</span>
+</code></pre></div>
+
+<h3 id="dung-projection">Dùng Projection</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ✅ 1 query, chỉ lấy đúng cột cần</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">orderSummaries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_context</span><span class="p">.</span><span class="n">Orders</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Where</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">CreatedAt</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">cutoff</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">o</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">OrderSummary</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">OrderId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Id</span><span class="p">,</span>
+<span class="w">        </span><span class="n">CustomerName</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">Customer</span><span class="p">.</span><span class="n">Name</span><span class="p">,</span><span class="w">  </span><span class="c1">// JOIN tự động</span>
+<span class="w">        </span><span class="n">TotalAmount</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">TotalAmount</span>
+<span class="w">    </span><span class="p">})</span>
+<span class="w">    </span><span class="p">.</span><span class="n">ToListAsync</span><span class="p">();</span>
+</code></pre></div>
+
+<h3 id="cach-phat-hien-n1">Cách phát hiện N+1</h3>
+<p>Dùng SQL Server Profiler hoặc EF Core Logging:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// appsettings.json</span>
+<span class="s">&quot;Logging&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="s">&quot;LogLevel&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="s">&quot;Microsoft.EntityFrameworkCore.Database.Command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Information&quot;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Nếu thấy 100 query <code>SELECT ... FROM Customers WHERE Id = ...</code> sau 1 query Orders → <strong>N+1 alert!</strong></p>
+<hr />
+<h2 id="tong-ket-checklist-database">✅ Tổng kết — Checklist Database</h2>
+<table>
+<thead>
+<tr>
+<th>Việc</th>
+<th>Nên làm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Index cho WHERE thường dùng</td>
+<td><code>CREATE INDEX IX_... ON Table (Column)</code></td>
+</tr>
+<tr>
+<td>Composite index</td>
+<td>Cột hay dùng nhất đặt <strong>đầu tiên</strong></td>
+</tr>
+<tr>
+<td>Covering index</td>
+<td>Dùng <code>INCLUDE</code> cho cột SELECT</td>
+</tr>
+<tr>
+<td>Xem Query Plan trước</td>
+<td>Bật Actual Execution Plan (Ctrl+M)</td>
+</tr>
+<tr>
+<td>Connection Pool</td>
+<td><code>Min=5, Max=100, Lifetime=300</code></td>
+</tr>
+<tr>
+<td>Dispose connection</td>
+<td>Luôn <code>using</code> hoặc try/finally</td>
+</tr>
+<tr>
+<td>N+1</td>
+<td>Dùng <code>.Include()</code> hoặc <code>.Select()</code></td>
+</tr>
+<tr>
+<td>Filtered index</td>
+<td>Index cho trạng thái Pending</td>
+</tr>
+<tr>
+<td>EF Core batch insert</td>
+<td>Dùng <code>AddRange()</code> + <code>SaveChanges()</code> 1 lần</td>
+</tr>
+<tr>
+<td>Monitor</td>
+<td>Xem <code>sys.dm_exec_query_stats</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="active-recall-kiem-tra-tri-nho">🧪 Active Recall — Kiểm tra trí nhớ</h2>
+<details>
+<summary><strong>1️⃣ Clustered vs Non-Clustered Index khác gì nhau?</strong></summary>
+
+Clustered = sắp xếp **dữ liệu vật lý** (chỉ 1 cái/table). Non-clustered = mục lục riêng (nhiều cái được).
+</details>
+
+<details>
+<summary><strong>2️⃣ Tại sao composite index (A, B) KHÔNG dùng được cho WHERE B = ?</strong></summary>
+
+Vì index được sắp xếp theo A trước, chỉ khi có A mới tìm được B. Giống tra mục lục sách — tìm theo Tên/Họ được, nhưng chỉ có Họ thì không dùng được mục lục Tên/Họ.
+</details>
+
+<details>
+<summary><strong>3️⃣ Index Seek vs Index Scan khác gì?</strong></summary>
+
+Index Seek = dò theo B-tree, chỉ lấy đúng dòng cần (nhanh). Index Scan = quét toàn bộ index (chậm). Seek tốt hơn Scan rất nhiều.
+</details>
+
+<details>
+<summary><strong>4️⃣ Khi nào anh nên dùng covering index?</strong></summary>
+
+Khi query SELECT chỉ cần vài cột và WHERE filter mạnh. Dùng INCLUDE để index chứa luôn dữ liệu, không cần lookup về table chính.
+</details>
+
+<details>
+<summary><strong>5️⃣ Connection pool exhaustion là gì?</strong></summary>
+
+Hết kết nối trong pool (vượt Max Pool Size). Request mới phải chờ → timeout. Nguyên nhân: quên dispose connection, dùng sync blocking, transaction dài.
+</details>
+
+<details>
+<summary><strong>6️⃣ Làm sao phát hiện N+1 query trong EF Core?</strong></summary>
+
+Bật logging level `Information` cho `Microsoft.EntityFrameworkCore.Database.Command`. Nếu thấy nhiều query lặp lại trong 1 request → N+1.
+</details>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 7: Observability | Phú Đạt Nguyễn</title>
+    <meta name="description" content="Xây dựng hệ thống observability toàn diện cho .NET backend với OpenTelemetry, Prometheus và Grafana. Senior .NET backend engineer học cách triển khai structured logging, distributed tracing và metrics">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 7: Observability">
+    <meta property="og:description" content="Xây dựng hệ thống observability toàn diện cho .NET backend với OpenTelemetry, Prometheus và Grafana. Senior .NET backend engineer học cách triển khai structured logging, distributed tracing và metrics">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/07-observability-metrics-logs-traces.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 7: Observability">
+    <meta name="twitter:description" content="Xây dựng hệ thống observability toàn diện cho .NET backend với OpenTelemetry, Prometheus và Grafana. Senior .NET backend engineer học cách triển khai structured logging, distributed tracing và metrics">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/07-observability-metrics-logs-traces.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 7: Observability",
+  "description": "Xây dựng hệ thống observability toàn diện cho .NET backend với OpenTelemetry, Prometheus và Grafana. Senior .NET backend engineer học cách triển khai structured logging, distributed tracing và metrics",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/07-observability-metrics-logs-traces.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-7-observability-metrics-logs-traces-trong-net">Bài 7: Observability — Metrics, Logs, Traces trong .NET</h1>
+<blockquote>
+<p>Dành cho: kỹ sư backend .NET 🔧
+Ngày: 2026-07-10
+Chủ đề: OpenTelemetry, Prometheus, Grafana, structured logging, distributed tracing
+Ẩn dụ xuyên suốt: 🏥 <strong>Bảng điều khiển trung tâm của bệnh viện</strong>
+Thời gian đọc: ~20 phút</p>
+</blockquote>
+<hr />
+<h2 id="tong-quan-may-bay-khong-co-bang-ieu-khien">🎯 Tổng quan — "Máy bay không có bảng điều khiển"</h2>
+<ul>
+<li>Không biết tốc độ bao nhiêu.</li>
+<li>Không biết còn bao nhiêu nhiên liệu.</li>
+<li>Không biết động cơ bên trái đang nóng lên bất thường.</li>
+<li>Không biết đang bay ở độ cao nào.</li>
+</ul>
+<p>Bạn chỉ biết... <strong>máy bay không rơi</strong>. Nhưng nếu nó sắp rơi thì bạn không có cách nào biết trước.</p>
+<hr />
+<p>Hệ thống phần mềm của bạn (API .NET, Kafka, Redis, DB) cũng vậy. Nếu không có <strong>Observability</strong>, bạn chỉ biết nó <strong>đang chạy</strong> — nhưng không biết nó <strong>chạy thế nào</strong>, <strong>có sắp chết không</strong>, <strong>chỗ nào đau</strong>.</p>
+<blockquote>
+<p><strong>Observability = khả năng hiểu được trạng thái bên trong của hệ thống chỉ bằng cách nhìn vào dữ liệu đầu ra (logs, metrics, traces).</strong></p>
+</blockquote>
+<p>Không phải là "có log là được". Observability là <strong>chủ động</strong>: hệ thống kể cho bạn nghe nó đang thế nào, không phải bạn phải SSH vào để hỏi.</p>
+<h3 id="ba-tru-cot-the-three-pillars">🔑 Ba trụ cột: The Three Pillars</h3>
+<table>
+<thead>
+<tr>
+<th>Trụ cột</th>
+<th>Ẩn dụ bệnh viện</th>
+<th>Mô tả</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Metrics</strong></td>
+<td>Máy đo nhịp tim, huyết áp</td>
+<td>Số đo tổng quát theo thời gian: RPS, latency p50/p95/p99, CPU, memory</td>
+</tr>
+<tr>
+<td><strong>Logs</strong></td>
+<td>Nhật ký bác sĩ ghi chép</td>
+<td>Sự kiện rời rạc có timestamp: "User X login failed", "DB connection timeout"</td>
+</tr>
+<tr>
+<td><strong>Traces</strong></td>
+<td>Phim chụp X-quang toàn thân</td>
+<td>Hành trình của 1 request xuyên suốt các service: Gateway → API → DB → Redis</td>
+</tr>
+</tbody>
+</table>
+<p>Cả 3 cái đều cần. Thiếu 1 trong 3 → bạn mù 1 mặt.</p>
+<hr />
+<h2 id="1-metrics-o-luong-e-biet-he-thong-khoe-hay-yeu">📊 1. Metrics — Đo lường để biết hệ thống "khoẻ hay yếu"</h2>
+<p>Metrics là các <strong>con số được thu thập định kỳ</strong>. Không phải "sự kiện gì đã xảy ra" mà là "giá trị bao nhiêu tại thời điểm này".</p>
+<h3 id="11-cac-loai-metrics-cot-loi">1.1. Các loại metrics cốt lõi</h3>
+<h4 id="a-red-method-danh-cho-request-driven-services">a) RED Method (dành cho request-driven services)</h4>
+<p><strong>R</strong> — Rate: bao nhiêu request/giây?
+<strong>E</strong> — Errors: bao nhiêu request bị lỗi?
+<strong>D</strong> — Duration: mất bao lâu?</p>
+<p>Đây là 3 metrics tối thiểu cho <strong>MỌI</strong> API endpoint.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Ví dụ: đo metrics bằng .NET Meter (OpenTelemetry)</span>
+<span class="k">using</span><span class="w"> </span><span class="nn">System.Diagnostics.Metrics</span><span class="p">;</span>
+
+<span class="kt">var</span><span class="w"> </span><span class="n">meter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Meter</span><span class="p">(</span><span class="s">&quot;MyApi&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">requestCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">meter</span><span class="p">.</span><span class="n">CreateCounter</span><span class="o">&lt;</span><span class="kt">long</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;api.requests.total&quot;</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">errorCounter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">meter</span><span class="p">.</span><span class="n">CreateCounter</span><span class="o">&lt;</span><span class="kt">long</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;api.requests.errors&quot;</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">requestDuration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">meter</span><span class="p">.</span><span class="n">CreateHistogram</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;api.requests.duration_ms&quot;</span><span class="p">);</span>
+
+<span class="c1">// Trong middleware</span>
+<span class="n">app</span><span class="p">.</span><span class="n">Use</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">next</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">sw</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Stopwatch</span><span class="p">.</span><span class="n">StartNew</span><span class="p">();</span>
+<span class="w">    </span><span class="k">try</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nf">next</span><span class="p">();</span>
+<span class="w">        </span><span class="n">requestCounter</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">KeyValuePair</span><span class="o">&lt;</span><span class="kt">string</span><span class="p">,</span><span class="w"> </span><span class="kt">object</span><span class="o">&gt;</span><span class="p">(</span><span class="s">&quot;method&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Request</span><span class="p">.</span><span class="n">Method</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">catch</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">errorCounter</span><span class="p">.</span><span class="n">Add</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">        </span><span class="k">throw</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">finally</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">requestDuration</span><span class="p">.</span><span class="n">Record</span><span class="p">(</span><span class="n">sw</span><span class="p">.</span><span class="n">ElapsedMilliseconds</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h4 id="b-use-method-danh-cho-resource-cpu-ram-disk-network">b) USE Method (dành cho resource — CPU, RAM, Disk, Network)</h4>
+<p><strong>U</strong> — Utilization: bao nhiêu % đang được dùng?
+<strong>S</strong> — Saturation: mức độ chờ đợi (queue depth)?
+<strong>E</strong> — Errors: có lỗi gì không?</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Utilization</th>
+<th>Saturation</th>
+<th>Errors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU</td>
+<td>% CPU time</td>
+<td>Run queue length (Linux load avg)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>% RAM used</td>
+<td>OOM score, swap usage</td>
+<td>OOM kills</td>
+</tr>
+<tr>
+<td>Disk</td>
+<td>I/O % busy</td>
+<td>I/O wait queue</td>
+<td>I/O errors</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>Bandwidth %</td>
+<td>Drop packet rate</td>
+<td>Interface errors</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-latency-percentile-tai-sao-average-latency-la-lua-ao">1.2. Latency percentile — Tại sao "average latency" là lừa đảo?</h3>
+<p>Giả sử API trả về <strong>trung bình 50ms</strong>. Nhưng thực tế:
+- 90% request: 10ms
+- 9% request: 100ms
+- 1% request: <strong>4000ms</strong> (4 giây!)</p>
+<p>Trung bình = (10×0.9 + 100×0.09 + 4000×0.01) = 9 + 9 + 40 = <strong>58ms</strong>. Nhìn vào 58ms → tưởng ổn. Nhưng <strong>1% khách hàng bị 4 giây</strong> — đó là thảm hoạ.</p>
+<p><strong>Giải pháp:</strong> Luôn theo dõi percentile:
+- <strong>p50</strong> (median): 50% request nhanh hơn mức này
+- <strong>p95</strong>: 95% request nhanh hơn mức này
+- <strong>p99</strong>: 99% request nhanh hơn mức này (quan trọng nhất!)</p>
+<blockquote>
+<p>Nếu p99 = 200ms mà p50 = 10ms → có 1% request rất chậm. Nguyên nhân có thể là GC, connection pool cạn, hoặc DB query bị blocking.</p>
+</blockquote>
+<h3 id="13-prometheus-kho-chua-metrics-pho-bien-nhat">1.3. Prometheus — Kho chứa metrics phổ biến nhất</h3>
+<p>Prometheus là hệ thống <strong>scrape-based</strong>: nó gọi đến endpoint <code>/metrics</code> của ứng dụng để lấy dữ liệu định kỳ.</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> HELP api_requests_duration_ms Histogram of request duration
+<span class="gh">#</span> TYPE api_requests_duration_ms histogram
+api_requests_duration_ms_bucket{method=&quot;GET&quot;,le=&quot;10&quot;} 1234
+api_requests_duration_ms_bucket{method=&quot;GET&quot;,le=&quot;50&quot;} 5678
+api_requests_duration_ms_bucket{method=&quot;GET&quot;,le=&quot;200&quot;} 7890
+api_requests_duration_ms_bucket{method=&quot;GET&quot;,le=&quot;+Inf&quot;} 8000
+api_requests_duration_ms_sum{method=&quot;GET&quot;} 240000
+api_requests_duration_ms_count{method=&quot;GET&quot;} 8000
+</code></pre></div>
+
+<p><strong>.NET OpenTelemetry</strong> tự động expose <code>/metrics</code> endpoint:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Program.cs — cấu hình OpenTelemetry Metrics</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddOpenTelemetry</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithMetrics</span><span class="p">(</span><span class="n">metrics</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">metrics</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddAspNetCoreInstrumentation</span><span class="p">()</span><span class="w">  </span><span class="c1">// tự động đo HTTP request</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddRuntimeInstrumentation</span><span class="p">()</span><span class="w">     </span><span class="c1">// CPU, memory, GC</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddPrometheusExporter</span><span class="p">());</span><span class="w">       </span><span class="c1">// expose /metrics</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapPrometheusScrapingEndpoint</span><span class="p">();</span><span class="w">     </span><span class="c1">// /metrics endpoint</span>
+</code></pre></div>
+
+<hr />
+<h2 id="2-structured-logging-log-kieu-may-oc-uoc">📝 2. Structured Logging — Log kiểu "máy đọc được"</h2>
+<p>Log truyền thống: chuỗi text thuần — con người đọc được, máy thì không.</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">2026</span><span class="o">-</span><span class="mf">07</span><span class="o">-</span><span class="mf">10</span><span class="w"> </span><span class="mf">14</span><span class="p">:</span><span class="mf">30</span><span class="p">:</span><span class="mf">22</span><span class="w"> </span><span class="n">INFO</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="mf">12345</span><span class="w"> </span><span class="nb">log</span><span class="n">in</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="n">IP</span><span class="w"> </span><span class="mf">192.168.1.1</span>
+</code></pre></div>
+
+<p>Structured log: JSON — <strong>cả người và máy</strong> đều đọc được, dễ query, dễ filter.</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-07-10T14:30:22.123Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User login success&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;userId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;ip&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;192.168.1.1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;service&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auth-api&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;correlationId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc-123-def&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="21-serilog-net-cau-hinh-chuan">2.1. Serilog + .NET — Cấu hình chuẩn</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Program.cs</span>
+<span class="n">Log</span><span class="p">.</span><span class="n">Logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">LoggerConfiguration</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">MinimumLevel</span><span class="p">.</span><span class="n">Information</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">MinimumLevel</span><span class="p">.</span><span class="n">Override</span><span class="p">(</span><span class="s">&quot;Microsoft&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">LogEventLevel</span><span class="p">.</span><span class="n">Warning</span><span class="p">)</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Enrich</span><span class="p">.</span><span class="n">WithCorrelationId</span><span class="p">()</span><span class="w">         </span><span class="c1">// thêm correlationId</span>
+<span class="w">    </span><span class="p">.</span><span class="n">Enrich</span><span class="p">.</span><span class="n">WithMachineName</span><span class="p">()</span><span class="w">           </span><span class="c1">// thêm tên máy</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WriteTo</span><span class="p">.</span><span class="n">Console</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">JsonFormatter</span><span class="p">())</span><span class="w"> </span><span class="c1">// JSON ra console</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WriteTo</span><span class="p">.</span><span class="n">Seq</span><span class="p">(</span><span class="s">&quot;http://seq:5341&quot;</span><span class="p">)</span><span class="w">     </span><span class="c1">// gửi về Seq Server</span>
+<span class="w">    </span><span class="p">.</span><span class="n">CreateLogger</span><span class="p">();</span>
+
+<span class="n">builder</span><span class="p">.</span><span class="n">Host</span><span class="p">.</span><span class="n">UseSerilog</span><span class="p">();</span>
+</code></pre></div>
+
+<h3 id="22-cac-muc-log-level-dung-ung-level-ung-lam-dung">2.2. Các mức log (level) — Dùng đúng level, đừng lạm dụng</h3>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Khi nào dùng</th>
+<th>Tần suất</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Trace</strong></td>
+<td>Debug cực kỳ chi tiết (từng dòng code)</td>
+<td>Dev/QA, rất hiếm production</td>
+</tr>
+<tr>
+<td><strong>Debug</strong></td>
+<td>Thông tin dev cần để debug</td>
+<td>Hầu như không dùng production</td>
+</tr>
+<tr>
+<td><strong>Information</strong></td>
+<td>Luồng chính: "User created order 789"</td>
+<td>Vừa phải, có chọn lọc</td>
+</tr>
+<tr>
+<td><strong>Warning</strong></td>
+<td>Có vấn đề nhưng chưa fail: "Connection pool near limit (80%)"</td>
+<td>Ít</td>
+</tr>
+<tr>
+<td><strong>Error</strong></td>
+<td>Exception, fail operation</td>
+<td>Chỉ khi thực sự lỗi</td>
+</tr>
+<tr>
+<td><strong>Fatal</strong></td>
+<td>App sắp chết: OOM, unhandled exception</td>
+<td>Cực kỳ hiếm</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Sai lầm kinh điển:</strong> Log <code>Information</code> cho MỌI THỨ. Hậu quả: 10GB log/ngày, không ai đọc, cost cao, performance giảm vì I/O.</p>
+</blockquote>
+<h3 id="23-correlation-id-xau-chuoi-log-lai-voi-nhau">2.3. Correlation ID — Xâu chuỗi log lại với nhau</h3>
+<p>Một request có thể đi qua: API Gateway → Auth → API → DB → Queue. Nếu mỗi service log riêng rẽ, làm sao biết request của user A đã đi đâu?</p>
+<p><strong>Correlation ID</strong> = 1 UUID duy nhất cho 1 request, được truyền qua tất cả service:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Middleware tạo correlation ID</span>
+<span class="n">app</span><span class="p">.</span><span class="n">Use</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">context</span><span class="p">,</span><span class="w"> </span><span class="n">next</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">var</span><span class="w"> </span><span class="n">correlationId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">context</span><span class="p">.</span><span class="n">Request</span><span class="p">.</span><span class="n">Headers</span><span class="p">[</span><span class="s">&quot;X-Correlation-ID&quot;</span><span class="p">]</span>
+<span class="w">                        </span><span class="o">??</span><span class="w"> </span><span class="n">Guid</span><span class="p">.</span><span class="n">NewGuid</span><span class="p">().</span><span class="n">ToString</span><span class="p">();</span>
+
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="p">(</span><span class="n">LogContext</span><span class="p">.</span><span class="n">PushProperty</span><span class="p">(</span><span class="s">&quot;CorrelationId&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">correlationId</span><span class="p">))</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">context</span><span class="p">.</span><span class="n">Response</span><span class="p">.</span><span class="n">Headers</span><span class="p">[</span><span class="s">&quot;X-Correlation-ID&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">correlationId</span><span class="p">;</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nf">next</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p>Khi có lỗi → search log theo <code>CorrelationId = "abc-123"</code> → thấy toàn bộ hành trình.</p>
+<hr />
+<h2 id="3-distributed-tracing-x-quang-cho-request">🔍 3. Distributed Tracing — X-quang cho request</h2>
+<p>Metrics cho biết "API chậm". Log cho biết "request nào bị lỗi". Nhưng <strong>Tại sao API chậm?</strong> — Đó là việc của <strong>Tracing</strong>.</p>
+<p>Tracing ghi lại:
+- Request đi qua những service nào.
+- Mỗi service mất bao nhiêu thời gian.
+- Có chỗ nào bị chậm bất thường không.</p>
+<h3 id="31-span-va-trace">3.1. Span và Trace</h3>
+<div class="codehilite"><pre><span></span><code>Trace (một request)
+├── Span: API Gateway → nhận request (2ms)
+├── Span: Gọi Auth Service (15ms)
+│   ├── Span: Query DB lấy user (12ms)
+│   └── Span: Verify token (3ms)
+├── Span: Gọi Order Service (120ms) ← chậm nhất!
+│   ├── Span: Redis cache check (2ms)
+│   ├── Span: SQL query (100ms) ← đây là thủ phạm!
+│   └── Span: Format response (18ms)
+└── Span: Trả response về client (1ms)
+</code></pre></div>
+
+<h3 id="32-opentelemetry-trong-net">3.2. OpenTelemetry trong .NET</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Program.cs — cấu hình Tracing</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddOpenTelemetry</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">WithTracing</span><span class="p">(</span><span class="n">tracing</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">tracing</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddAspNetCoreInstrumentation</span><span class="p">()</span><span class="w">     </span><span class="c1">// tự động trace HTTP request</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddSqlClientInstrumentation</span><span class="p">()</span><span class="w">      </span><span class="c1">// trace SQL query</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddRedisInstrumentation</span><span class="p">()</span><span class="w">          </span><span class="c1">// trace Redis calls</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddKafkaInstrumentation</span><span class="p">()</span><span class="w">          </span><span class="c1">// trace producer/consumer</span>
+<span class="w">        </span><span class="p">.</span><span class="n">AddOtlpExporter</span><span class="p">(</span><span class="n">options</span><span class="w"> </span><span class="o">=&gt;</span><span class="w">         </span><span class="c1">// gửi về Jaeger/Grafana Tempo</span>
+<span class="w">            </span><span class="n">options</span><span class="p">.</span><span class="n">Endpoint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Uri</span><span class="p">(</span><span class="s">&quot;http://tempo:4317&quot;</span><span class="p">)));</span>
+</code></pre></div>
+
+<h3 id="33-custom-tracing-voi-activitysource">3.3. Custom tracing với ActivitySource</h3>
+<p>Khi cần trace một đoạn code custom (ví dụ gọi external API):</p>
+<div class="codehilite"><pre><span></span><code><span class="k">private</span><span class="w"> </span><span class="k">static</span><span class="w"> </span><span class="k">readonly</span><span class="w"> </span><span class="n">ActivitySource</span><span class="w"> </span><span class="n">ActivitySource</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="p">(</span><span class="s">&quot;OrderService&quot;</span><span class="p">);</span>
+
+<span class="k">public</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="n">Task</span><span class="o">&lt;</span><span class="n">Order</span><span class="o">&gt;</span><span class="w"> </span><span class="n">ProcessOrderAsync</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">orderId</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="nn">var</span><span class="w"> </span><span class="n">activity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ActivitySource</span><span class="p">.</span><span class="n">StartActivity</span><span class="p">(</span><span class="s">&quot;ProcessOrder&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">activity</span><span class="o">?.</span><span class="n">SetTag</span><span class="p">(</span><span class="s">&quot;order.id&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">orderId</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Đoạn code cần trace</span>
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="p">(</span><span class="kt">var</span><span class="w"> </span><span class="n">validateActivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ActivitySource</span><span class="p">.</span><span class="n">StartActivity</span><span class="p">(</span><span class="s">&quot;ValidateOrder&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">isValid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="n">_validator</span><span class="p">.</span><span class="n">ValidateAsync</span><span class="p">(</span><span class="n">orderId</span><span class="p">);</span>
+<span class="w">        </span><span class="n">validateActivity</span><span class="o">?.</span><span class="n">SetTag</span><span class="p">(</span><span class="s">&quot;valid&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">isValid</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">using</span><span class="w"> </span><span class="p">(</span><span class="kt">var</span><span class="w"> </span><span class="n">persistActivity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ActivitySource</span><span class="p">.</span><span class="n">StartActivity</span><span class="p">(</span><span class="s">&quot;PersistOrder&quot;</span><span class="p">))</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">_db</span><span class="p">.</span><span class="n">Orders</span><span class="p">.</span><span class="n">AddAsync</span><span class="p">(</span><span class="n">order</span><span class="p">);</span>
+<span class="w">        </span><span class="n">persistActivity</span><span class="o">?.</span><span class="n">SetTag</span><span class="p">(</span><span class="s">&quot;db.rows_affected&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-kien-truc-observability-hoan-chinh">🏗️ 4. Kiến trúc Observability hoàn chỉnh</h2>
+<div class="codehilite"><pre><span></span><code>                    ┌──────────────┐
+                    │   Grafana    │ ← Dashboard
+                    └──────┬───────┘
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                   │
+   ┌────▼────┐      ┌─────▼──────┐      ┌─────▼──────┐
+   │Prometheus│      │    Loki    │      │   Tempo    │
+   │(Metrics) │      │   (Logs)   │      │  (Traces)  │
+   └────┬────┘      └─────┬──────┘      └─────┬──────┘
+        │                  │                   │
+        └──────────────────┼───────────────────┘
+                           │
+                    ┌──────▼──────┐
+                    │ OtelCollector│
+                    │ (xử lý data) │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │   .NET App  │
+                    │  metrics/   │
+                    │  logs/      │
+                    │  traces     │
+                    └─────────────┘
+</code></pre></div>
+
+<p><strong>Công cụ cho từng trụ cột:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Trụ cột</th>
+<th>Công cụ</th>
+<th>Ghi chú</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metrics</td>
+<td>Prometheus + Grafana</td>
+<td>Tiêu chuẩn industry</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td>Seq / Loki + Grafana</td>
+<td>Seq dễ dùng, Loki rẻ</td>
+</tr>
+<tr>
+<td>Traces</td>
+<td>Jaeger / Grafana Tempo</td>
+<td>Jaeger đơn giản, Tempo mạnh hơn</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-observability-trong-ung-dung-cau-hinh-thuc-te">🎯 5. Observability trong ứng dụng — Cấu hình thực tế</h2>
+<h3 id="51-checklist-toi-thieu-cho-production">5.1. Checklist tối thiểu cho production</h3>
+<p><strong>Phải có ngay từ ngày 1:</strong>
+- [x] Health check endpoint (<code>/health</code>, <code>/ready</code>, <code>/live</code>)
+- [x] Metrics: RPS, error rate, p50/p95/p99 latency (per endpoint)
+- [x] Metrics: CPU, RAM, thread pool, connection pool
+- [x] Log structured (JSON) với correlation ID
+- [x] Log level: Info cho business event, Warning cho bất thường, Error cho fail
+- [x] Alert khi error rate &gt; 1% hoặc p99 &gt; 1s</p>
+<p><strong>Nên có khi scale:</strong>
+- [ ] Distributed tracing qua OpenTelemetry
+- [ ] Database query tracing
+- [ ] Kafka/Cache tracing
+- [ ] Dashboard Grafana cho từng service
+- [ ] SLA/SLO monitoring</p>
+<h3 id="52-health-check-endpoint">5.2. Health check endpoint</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// Program.cs</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddHealthChecks</span><span class="p">()</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddDbContextCheck</span><span class="o">&lt;</span><span class="n">AppDbContext</span><span class="o">&gt;</span><span class="p">()</span><span class="w">           </span><span class="c1">// DB có alive?</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddRedis</span><span class="p">(</span><span class="n">_config</span><span class="p">[</span><span class="s">&quot;Redis:Connection&quot;</span><span class="p">])</span><span class="w">       </span><span class="c1">// Redis có alive?</span>
+<span class="w">    </span><span class="p">.</span><span class="n">AddKafka</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">ProducerConfig</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">});</span><span class="w">        </span><span class="c1">// Kafka có alive?</span>
+
+<span class="n">app</span><span class="p">.</span><span class="n">MapHealthChecks</span><span class="p">(</span><span class="s">&quot;/health&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HealthCheckOptions</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">ResponseWriter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">report</span><span class="p">)</span><span class="w"> </span><span class="o">=&gt;</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">        </span><span class="n">ctx</span><span class="p">.</span><span class="n">Response</span><span class="p">.</span><span class="n">ContentType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;application/json&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">var</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">JsonSerializer</span><span class="p">.</span><span class="n">Serialize</span><span class="p">(</span><span class="k">new</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">report</span><span class="p">.</span><span class="n">Status</span><span class="p">.</span><span class="n">ToString</span><span class="p">(),</span>
+<span class="w">            </span><span class="n">checks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">report</span><span class="p">.</span><span class="n">Entries</span><span class="p">.</span><span class="n">Select</span><span class="p">(</span><span class="n">e</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="k">new</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">                </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">Key</span><span class="p">,</span>
+<span class="w">                </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">Value</span><span class="p">.</span><span class="n">Status</span><span class="p">.</span><span class="n">ToString</span><span class="p">(),</span>
+<span class="w">                </span><span class="n">duration</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">Value</span><span class="p">.</span><span class="n">Duration</span><span class="p">.</span><span class="n">TotalMilliseconds</span>
+<span class="w">            </span><span class="p">})</span>
+<span class="w">        </span><span class="p">});</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="n">ctx</span><span class="p">.</span><span class="n">Response</span><span class="p">.</span><span class="n">WriteAsync</span><span class="p">(</span><span class="n">json</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="53-dashboard-metrics-quan-trong-grafana">5.3. Dashboard metrics quan trọng (Grafana)</h3>
+<p><strong>Row 1 — Tổng quan:</strong>
+- RPS (rate per endpoint)
+- Error rate % (5xx / total)
+- p50, p95, p99 latency (heatmap)</p>
+<p><strong>Row 2 — Resource:</strong>
+- CPU usage (%)
+- Memory working set (MB)
+- Thread pool queue length
+- GC pause time (ms)</p>
+<p><strong>Row 3 — Dependency:</strong>
+- DB query duration p99
+- Redis hit/miss rate
+- Kafka consumer lag</p>
+<hr />
+<h2 id="6-sai-lam-thuong-gap-cach-tranh">⚠️ 6. Sai lầm thường gặp &amp; Cách tránh</h2>
+<h3 id="co-log-la-u">❌ "Có log là đủ"</h3>
+<p>Không có metrics → không biết xu hướng. Hệ thống chậm dần trong 3 tháng, đến khi sập mới biết.</p>
+<h3 id="log-tat-ca-moi-thu-level-information">❌ "Log tất cả mọi thứ level Information"</h3>
+<p>10GB log/ngày → ai đọc? → không ai đọc → có log cũng như không.</p>
+<p><strong>Fix:</strong> Đặt giới hạn (rate limit) cho log. Dùng sampling: 1% request trace, 100% error.</p>
+<h3 id="average-latency-la-u">❌ "Average latency là đủ"</h3>
+<p>Như đã giải thích ở trên, average là lừa đảo. Luôn dùng p95/p99.</p>
+<h3 id="khong-co-correlation-id">❌ "Không có correlation ID"</h3>
+<p>Khi user report lỗi, không biết tìm log ở đâu. Không thể nối request qua các service.</p>
+<p><strong>Fix:</strong> Luôn có correlation ID từ API Gateway xuyên suốt.</p>
+<h3 id="quen-alert">❌ "Quên alert"</h3>
+<p>Có metrics, có dashboard nhưng không ai ngồi nhìn 24/7. Khi có vấn đề, chỉ phát hiện khi user report.</p>
+<p><strong>Fix:</strong> Alert qua Slack/Telegram/PagerDuty khi metrics vượt ngưỡng:</p>
+<div class="codehilite"><pre><span></span><code>Error rate &gt; 1% trong 5 phút → 🔴 Alarm
+p99 latency &gt; 2s trong 10 phút → 🟡 Warning
+</code></pre></div>
+
+<hr />
+<h2 id="tong-ket-ban-can-nho-gi">🧠 Tổng kết — Bạn cần nhớ gì?</h2>
+<table>
+<thead>
+<tr>
+<th>Khái niệm</th>
+<th>Bản chất</th>
+<th>Ẩn dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Metrics</strong></td>
+<td>Số đo định kỳ</td>
+<td>Máy đo nhịp tim</td>
+</tr>
+<tr>
+<td><strong>Logs</strong></td>
+<td>Sự kiện có timestamp</td>
+<td>Nhật ký bác sĩ</td>
+</tr>
+<tr>
+<td><strong>Traces</strong></td>
+<td>Hành trình request</td>
+<td>Phim X-quang</td>
+</tr>
+<tr>
+<td><strong>Prometheus</strong></td>
+<td>Kho chứa metrics</td>
+<td>Bảng điểm sức khoẻ</td>
+</tr>
+<tr>
+<td><strong>Grafana</strong></td>
+<td>Dashboard trực quan</td>
+<td>Màn hình ICU</td>
+</tr>
+<tr>
+<td><strong>Correlation ID</strong></td>
+<td>UUID xâu chuỗi</td>
+<td>Số bệnh án</td>
+</tr>
+<tr>
+<td><strong>p99</strong></td>
+<td>99% request nhanh hơn mức này</td>
+<td>Không để 1% khách hàng chết</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="active-recall-quiz">✅ Active Recall Quiz</h2>
+<details>
+<summary><b>Câu 1:</b> 3 trụ cột của Observability là gì? Ẩn dụ bệnh viện tương ứng?</summary>
+
+1. **Metrics** — Máy đo nhịp tim, huyết áp (số đo định kỳ)
+2. **Logs** — Nhật ký bác sĩ (sự kiện rời rạc)
+3. **Traces** — Phim X-quang (hành trình request xuyên service)
+</details>
+
+<details>
+<summary><b>Câu 2:</b> RED method và USE method khác nhau thế nào?</summary>
+
+**RED:** Rate, Errors, Duration — dùng cho request-driven services (API).
+**USE:** Utilization, Saturation, Errors — dùng cho resource (CPU, RAM, Disk, Network).
+</details>
+
+<details>
+<summary><b>Câu 3:</b> Tại sao "average latency" là lừa đảo? Nên dùng gì thay thế?</summary>
+
+Average bị skew bởi outlier. 99% request 10ms + 1% request 4000ms → average = ~50ms. Nhìn vào tưởng ổn.
+
+Thay thế bằng **percentile**: p50, p95, p99 (đặc biệt p99).
+</details>
+
+<details>
+<summary><b>Câu 4:</b> Correlation ID dùng để làm gì?</summary>
+
+Là UUID duy nhất gắn vào mỗi request, truyền qua các service. Giúp xâu chuỗi log/trace lại với nhau để debug request từ đầu đến cuối.
+</details>
+
+<details>
+<summary><b>Câu 5:</b> Bộ công cụ Observability phổ biến nhất hiện nay (open source) là gì?</summary>
+
+**Prometheus** (metrics) + **Loki** (logs) + **Tempo/Jaeger** (traces) + **Grafana** (dashboard) + **OpenTelemetry** (instrumentation — agent thu thập dữ liệu).
+</details>
+
+<details>
+<summary><b>Câu 6:</b> Khi cấu hình log, sai lầm lớn nhất là gì?</summary>
+
+Log **Information** cho mọi thứ → 10GB log/ngày, không ai đọc, cost cao, chậm I/O.
+
+**Fix:** Chỉ log business event ở Info. Warning cho bất thường. Error cho thực sự lỗi. Dùng structured log (JSON) + rate limit + sampling.
+</details>
+
+<hr />
+<blockquote>
+<p>💬 <em>"Observability không phải là 'có log là được'. Mù 1 trong 3 trụ cột cũng như lái máy bay không có bảng điều khiển — vẫn bay được, nhưng không biết khi nào rơi."</em></p>
+</blockquote>
+<hr />
+<p><em>Bài tiếp theo: Bài 8 — Memory &amp; GC .NET: Stack vs Heap, Generations, Memory Leak</em></p>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>

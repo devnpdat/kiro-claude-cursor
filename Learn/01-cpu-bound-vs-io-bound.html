@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài 1: CPU-bound vs I/O-bound | Phú Đạt Nguyễn</title>
+    <meta name="description" content="Phân biệt rõ ràng CPU-bound và I/O-bound operations trong .NET backend. Ẩn dụ đầu bếp giúp senior .NET developer hiểu ngay khi nào nên dùng async/await, khi nào cần Task.Run, và tại sao thread pool kh">
+    <meta name="author" content="Phú Đạt Nguyễn">
+    <meta property="og:title" content="Bài 1: CPU-bound vs I/O-bound">
+    <meta property="og:description" content="Phân biệt rõ ràng CPU-bound và I/O-bound operations trong .NET backend. Ẩn dụ đầu bếp giúp senior .NET developer hiểu ngay khi nào nên dùng async/await, khi nào cần Task.Run, và tại sao thread pool kh">
+    <meta property="og:url" content="https://devnpdat.github.io/kiro-claude-cursor/Learn/01-cpu-bound-vs-io-bound.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Phú Đạt Nguyễn — .NET Developer">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Bài 1: CPU-bound vs I/O-bound">
+    <meta name="twitter:description" content="Phân biệt rõ ràng CPU-bound và I/O-bound operations trong .NET backend. Ẩn dụ đầu bếp giúp senior .NET developer hiểu ngay khi nào nên dùng async/await, khi nào cần Task.Run, và tại sao thread pool kh">
+    <link rel="canonical" href="https://devnpdat.github.io/kiro-claude-cursor/Learn/01-cpu-bound-vs-io-bound.html">
+    <script type="application/ld+json">
+    {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Bài 1: CPU-bound vs I/O-bound",
+  "description": "Phân biệt rõ ràng CPU-bound và I/O-bound operations trong .NET backend. Ẩn dụ đầu bếp giúp senior .NET developer hiểu ngay khi nào nên dùng async/await, khi nào cần Task.Run, và tại sao thread pool kh",
+  "author": {
+    "@type": "Person",
+    "name": "Phú Đạt Nguyễn",
+    "url": "https://www.linkedin.com/in/phudatnguyen-dotnet-developer/"
+  },
+  "url": "https://devnpdat.github.io/kiro-claude-cursor/Learn/01-cpu-bound-vs-io-bound.html"
+}
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        :root {
+            --bg-main: #0d0d14;
+            --bg-card: #1a1a24;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #06b6d4;
+            --accent-success: #10b981;
+            --border-color: rgba(255,255,255,0.1);
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            line-height: 1.8;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        /* Article content */
+        .article { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; }
+        .article h1 { font-size: 2rem; font-weight: 800; line-height: 1.3; margin-bottom: 1rem; }
+        .article h1 .gradient { background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .article h2 { font-size: 1.5rem; font-weight: 700; margin: 2rem 0 0.8rem; color: var(--accent-secondary); }
+        .article h3 { font-size: 1.2rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+        .article h4 { font-weight: 700; margin: 1rem 0 0.4rem; }
+        .article p { margin-bottom: 1rem; }
+        .article a { color: var(--accent-primary); text-decoration: none; }
+        .article a:hover { text-decoration: underline; }
+        .article strong { color: white; }
+        .article em { color: var(--text-muted); }
+        .article ul, .article ol { margin: 0.5rem 0 1rem 1.5rem; }
+        .article li { margin-bottom: 0.4rem; }
+        .article blockquote {
+            border-left: 4px solid var(--accent-primary);
+            background: rgba(139,92,246,0.08);
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            color: var(--text-muted);
+        }
+        .article blockquote strong { color: var(--accent-secondary); }
+        .article hr { border: none; height: 1px; background: var(--border-color); margin: 2rem 0; }
+        .article img { max-width: 100%; border-radius: 10px; margin: 1rem 0; }
+        .article table { width: 100%; border-collapse: collapse; margin: 1rem 0; border-radius: 8px; overflow: hidden; }
+        .article th, .article td { padding: 0.7rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        .article th { background: rgba(255,255,255,0.05); font-weight: 700; color: var(--accent-secondary); }
+        .article tr:last-child td { border-bottom: none; }
+        /* Code */
+        .article code {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.08);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #fca5a5;
+        }
+        .article pre {
+            background: #000;
+            padding: 1.2rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin: 1rem 0;
+        }
+        .article pre code { background: none; padding: 0; color: #a5b4fc; }
+        /* Details for quiz */
+        .article details {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.8rem 1.2rem;
+            margin: 1rem 0;
+            cursor: pointer;
+        }
+        .article details summary {
+            font-weight: 700;
+            color: var(--accent-success);
+            cursor: pointer;
+        }
+        .article details[open] { background: rgba(16,185,129,0.05); }
+        /* Nav + Footer */
+        .nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem; max-width: 800px; margin: 0 auto;
+        }
+        .nav-bar a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+        .nav-bar a:hover { color: white; }
+        .footer {
+            text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.85rem;
+            border-top: 1px solid var(--border-color); margin-top: 2rem;
+        }
+        .footer a { color: var(--accent-primary); text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        /* Callouts */
+        .callout {
+            display: flex; align-items: flex-start; gap: 0.8rem;
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 1rem 1.2rem; margin: 1rem 0;
+        }
+        .callout.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .callout.danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); }
+        .callout-icon { font-size: 1.2rem; flex-shrink: 0; }
+        @media (max-width: 600px) {
+            .container { padding: 1rem; }
+            .article { padding: 1.2rem; }
+            .article h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="../index.html">🏠 Trang chính</a>
+        <a href="index.html">📖 Learn</a>
+    </div>
+    <div class="container">
+        <div class="article">
+<h1 id="bai-1-cpu-bound-vs-io-bound-hieu-e-khong-ung-cho-noi-soi">🧠 Bài 1: CPU-bound vs I/O-bound — Hiểu để không "đứng chờ nồi sôi"</h1>
+<blockquote>
+<p><strong>Dành cho:</strong> kỹ sư backend .NET<br />
+<strong>Ngày:</strong> 2026-07-10<br />
+<strong>Chủ đề:</strong> Concurrency fundamentals<br />
+<strong>Thời gian đọc:</strong> ~10 phút</p>
+</blockquote>
+<hr />
+<h2 id="tldr-tom-gon-1-cau">📌 TL;DR — Tóm gọn 1 câu</h2>
+<blockquote>
+<p><strong>CPU-bound</strong> = tay bận liên tục (thái rau, băm thịt).<br />
+<strong>I/O-bound</strong> = đứng chờ, không làm gì (chờ trứng luộc, chờ lò nướng).<br />
+<strong>90% backend API</strong> của mình là <strong>I/O-bound</strong> — và đó là lý do async/await quan trọng vãi.</p>
+</blockquote>
+<hr />
+<h2 id="an-du-au-bep-chef-metaphor">🍳 Ẩn dụ đầu bếp (Chef Metaphor)</h2>
+<p>Tưởng tượng anh là một <strong>đầu bếp</strong> trong bếp nhà hàng. Anh có nhiều món cần nấu cùng lúc.</p>
+<h3 id="hai-loai-cong-viec-trong-bep">Hai loại công việc trong bếp:</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>🔪 CPU-bound</th>
+<th>⏳ I/O-bound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Là gì?</strong></td>
+<td>Tay anh <strong>bận liên tục</strong></td>
+<td>Anh <strong>đứng chờ</strong>, tay rảnh</td>
+</tr>
+<tr>
+<td><strong>Ví dụ bếp</strong></td>
+<td>Thái rau, băm thịt, nặn há cảo</td>
+<td>Luộc trứng, chờ lò nướng, chờ nước sôi</td>
+</tr>
+<tr>
+<td><strong>CPU làm gì?</strong></td>
+<td>Chạy hết công suất 100%</td>
+<td>Ngồi chơi 5-10%, chờ kết quả từ bên ngoài</td>
+</tr>
+<tr>
+<td><strong>Bottleneck</strong></td>
+<td>Tốc độ tay (CPU speed)</td>
+<td>Thời gian chờ (network, disk, DB)</td>
+</tr>
+<tr>
+<td><strong>Giải pháp</strong></td>
+<td>Thêm tay (more threads/cores)</td>
+<td>Làm việc khác trong lúc chờ (async)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="au-bep-thong-minh-vs-au-bep-ngao">🧑‍🍳 Đầu bếp thông minh vs Đầu bếp "ngáo"</h3>
+<div class="codehilite"><pre><span></span><code>Đầu bếp &quot;ngáo&quot; (blocking/synchronous):
+┌─────────────────────────────────────────────────┐
+│ Bỏ trứng vô nồi → ĐỨNG NHÌN NỒI 10 PHÚT →    │
+│ Trứng chín → Mới bắt đầu thái rau → ...        │
+│                                                  │
+│ ⏱️ Tổng: 10 + 5 + 8 = 23 phút                  │
+└─────────────────────────────────────────────────┘
+
+Đầu bếp thông minh (async):
+┌─────────────────────────────────────────────────┐
+│ Bỏ trứng vô nồi → TRONG LÚC CHỜ → thái rau → │
+│ TRONG LÚC CHỜ → băm thịt → Trứng chín! →      │
+│ Xong hết!                                        │
+│                                                  │
+│ ⏱️ Tổng: ~10 phút (chạy song song)              │
+└─────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Moral of the story:</strong> Anh không cần thêm đầu bếp (thread) để luộc trứng nhanh hơn. Anh chỉ cần <strong>đừng đứng nhìn nồi</strong> — đi làm việc khác trong lúc chờ.</p>
+<hr />
+<h2 id="vi-du-cu-the-trong-code">🔍 Ví dụ cụ thể trong code</h2>
+<h3 id="cpu-bound-tay-ban-lien-tuc">CPU-bound — "Tay bận liên tục"</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 🔪 Image processing — CPU phải tính toán từng pixel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+<span class="n">img</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;photo.jpg&quot;</span><span class="p">)</span>
+<span class="n">img</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="mi">1920</span><span class="p">,</span> <span class="mi">1080</span><span class="p">))</span>  <span class="c1"># CPU chạy hết tốc lực</span>
+<span class="n">img</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;resized.jpg&quot;</span><span class="p">)</span>
+
+<span class="c1"># 🔪 Encryption — CPU phải mã hóa từng block</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="n">hashlib</span><span class="o">.</span><span class="n">pbkdf2_hmac</span><span class="p">(</span><span class="s1">&#39;sha256&#39;</span><span class="p">,</span> <span class="n">password</span><span class="p">,</span> <span class="n">salt</span><span class="p">,</span> <span class="mi">100000</span><span class="p">)</span>  <span class="c1"># CPU quay vù vù</span>
+
+<span class="c1"># 🔪 Data compression</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gzip</span>
+<span class="n">gzip</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">huge_data</span><span class="p">)</span>  <span class="c1"># CPU nén từng byte</span>
+
+<span class="c1"># 🔪 Complex calculations</span>
+<span class="n">result</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10_000_000</span><span class="p">))</span>  <span class="c1"># CPU: &quot;mệt quá trời&quot;</span>
+</code></pre></div>
+
+<h3 id="io-bound-ung-cho-tay-ranh">I/O-bound — "Đứng chờ, tay rảnh"</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ⏳ Database query — CPU gửi query rồi... ngồi chờ</span>
+<span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM orders WHERE status = &#39;pending&#39;&quot;</span><span class="p">)</span>
+<span class="c1"># CPU: &quot;Ê DB, trả kết quả đi...&quot; *ngáp*</span>
+
+<span class="c1"># ⏳ HTTP call — gọi service khác rồi chờ</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://api.payment.com/verify&quot;</span><span class="p">)</span>
+<span class="c1"># CPU: &quot;Hello? Ai đó? Trả response đi...&quot; *lướt FB*</span>
+
+<span class="c1"># ⏳ File I/O — đọc/ghi file</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;big_file.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>  <span class="c1"># CPU chờ disk đọc xong</span>
+
+<span class="c1"># ⏳ Sending email</span>
+<span class="n">smtp</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">email</span><span class="p">)</span>  <span class="c1"># CPU chờ SMTP server respond</span>
+</code></pre></div>
+
+<hr />
+<h2 id="bang-phan-loai-nhanh">📊 Bảng phân loại nhanh</h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Loại</th>
+<th>Tại sao?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Query database (SELECT, INSERT...)</td>
+<td>⏳ <strong>I/O-bound</strong></td>
+<td>CPU gửi query rồi chờ DB trả</td>
+</tr>
+<tr>
+<td>Gọi REST API bên ngoài</td>
+<td>⏳ <strong>I/O-bound</strong></td>
+<td>Chờ network round-trip</td>
+</tr>
+<tr>
+<td>Đọc/ghi file</td>
+<td>⏳ <strong>I/O-bound</strong></td>
+<td>Chờ disk</td>
+</tr>
+<tr>
+<td>Gửi email/SMS</td>
+<td>⏳ <strong>I/O-bound</strong></td>
+<td>Chờ SMTP/SMS gateway</td>
+</tr>
+<tr>
+<td>Resize ảnh, generate thumbnail</td>
+<td>🔪 <strong>CPU-bound</strong></td>
+<td>CPU xử lý từng pixel</td>
+</tr>
+<tr>
+<td>Encrypt/decrypt data</td>
+<td>🔪 <strong>CPU-bound</strong></td>
+<td>CPU tính toán crypto</td>
+</tr>
+<tr>
+<td>Nén/giải nén file (zip, gzip)</td>
+<td>🔪 <strong>CPU-bound</strong></td>
+<td>CPU nén từng block</td>
+</tr>
+<tr>
+<td>Parse JSON/XML cực lớn</td>
+<td>🔪 <strong>CPU-bound</strong></td>
+<td>CPU parse từng token</td>
+</tr>
+<tr>
+<td>Sort 10 triệu records in-memory</td>
+<td>🔪 <strong>CPU-bound</strong></td>
+<td>CPU so sánh liên tục</td>
+</tr>
+<tr>
+<td>Machine learning inference</td>
+<td>🔪 <strong>CPU-bound</strong></td>
+<td>CPU/GPU tính toán ma trận</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="key-insight-cai-nay-quan-trong-ne">💡 Key Insight — Cái này quan trọng nè</h2>
+<h3 id="90-backend-api-work-la-io-bound">90% backend API work là I/O-bound</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">Typical</span><span class="w"> </span><span class="nv">API</span><span class="w"> </span><span class="nv">request</span><span class="w"> </span><span class="nv">lifecycle</span>:
+
+<span class="w">  </span><span class="nv">Request</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Validate</span><span class="w"> </span><span class="nv">input</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Query</span><span class="w"> </span><span class="nv">DB</span><span class="w"> </span>→<span class="w"> </span><span class="k">Call</span><span class="w"> </span><span class="nl">service</span><span class="w"> </span>→<span class="w"> </span><span class="nv">Format</span><span class="w"> </span><span class="nv">response</span><span class="w"> </span>→<span class="w"> </span><span class="k">Return</span>
+<span class="w">              </span><span class="ss">(</span><span class="nv">CPU</span>:<span class="w"> </span><span class="mi">1</span><span class="nv">ms</span><span class="ss">)</span><span class="w">     </span><span class="ss">(</span><span class="nv">I</span><span class="o">/</span><span class="nv">O</span>:<span class="w"> </span><span class="mi">50</span><span class="nv">ms</span><span class="ss">)</span><span class="w">  </span><span class="ss">(</span><span class="nv">I</span><span class="o">/</span><span class="nv">O</span>:<span class="w"> </span><span class="mi">100</span><span class="nv">ms</span><span class="ss">)</span><span class="w">   </span><span class="ss">(</span><span class="nv">CPU</span>:<span class="w"> </span><span class="mi">1</span><span class="nv">ms</span><span class="ss">)</span>
+<span class="w">                  </span>│<span class="w">                                          </span>│
+<span class="w">                  </span>└────<span class="w"> </span><span class="nv">CPU</span><span class="w"> </span><span class="nv">l</span>à<span class="nv">m</span><span class="w"> </span><span class="nv">vi</span>ệ<span class="nv">c</span>:<span class="w"> </span><span class="o">~</span><span class="mi">2</span><span class="nv">ms</span><span class="w"> </span>──────────────────┘
+<span class="w">                         </span><span class="nv">I</span><span class="o">/</span><span class="nv">O</span><span class="w"> </span><span class="nv">ch</span>ờ<span class="w"> </span>đợ<span class="nv">i</span>:<span class="w"> </span><span class="o">~</span><span class="mi">150</span><span class="nv">ms</span>
+
+<span class="w">  </span>👉<span class="w"> </span><span class="nv">CPU</span><span class="w"> </span><span class="nv">ch</span>ỉ<span class="w"> </span><span class="nv">l</span>à<span class="nv">m</span><span class="w"> </span><span class="nv">vi</span>ệ<span class="nv">c</span><span class="w"> </span><span class="mi">1</span>.<span class="mi">3</span><span class="o">%</span><span class="w"> </span><span class="nv">th</span>ờ<span class="nv">i</span><span class="w"> </span><span class="nv">gian</span>.<span class="w"> </span><span class="mi">98</span>.<span class="mi">7</span><span class="o">%</span><span class="w"> </span><span class="nv">l</span>à<span class="w"> </span>ĐỨ<span class="nv">NG</span><span class="w"> </span><span class="nv">CH</span>Ờ.
+</code></pre></div>
+
+<p><strong>Sai lầm phổ biến:</strong> Nhiều dev nghĩ API chậm → cần CPU mạnh hơn → scale up server.<br />
+<strong>Sự thật:</strong> API chậm vì <strong>chờ I/O</strong> → cần <strong>async/await</strong> hoặc <strong>concurrent requests</strong> → không cần server khỏe hơn.</p>
+<h3 id="cong-thuc-on-gian">Công thức đơn giản:</h3>
+<table>
+<thead>
+<tr>
+<th>Triệu chứng</th>
+<th>Chẩn đoán</th>
+<th>Thuốc</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU luôn <strong>100%</strong>, app chậm</td>
+<td>🔪 CPU-bound</td>
+<td>Thêm CPU cores, dùng multiprocessing, optimize algorithm</td>
+</tr>
+<tr>
+<td>CPU chỉ <strong>5-10%</strong>, app VẪN chậm</td>
+<td>⏳ I/O-bound</td>
+<td>Dùng async/await, connection pooling, caching, concurrent I/O</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="giai-phap-cho-tung-loai">🔧 Giải pháp cho từng loại</h2>
+<h3 id="voi-io-bound-pho-bien-nhat">Với I/O-bound (phổ biến nhất):</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># ❌ SAI — Đầu bếp &quot;ngáo&quot;: chờ từng món một</span>
+<span class="n">user</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>          <span class="c1"># chờ 50ms</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_orders</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>      <span class="c1"># chờ 50ms  </span>
+<span class="n">notifications</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_notifs</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span> <span class="c1"># chờ 50ms</span>
+<span class="c1"># Tổng: 150ms 😴</span>
+
+<span class="c1"># ✅ ĐÚNG — Đầu bếp thông minh: chờ tất cả cùng lúc</span>
+<span class="n">user</span><span class="p">,</span> <span class="n">orders</span><span class="p">,</span> <span class="n">notifications</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>              <span class="c1"># ─┐</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">get_orders</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>            <span class="c1"># ─┼─ chạy song song</span>
+    <span class="n">db</span><span class="o">.</span><span class="n">get_notifs</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>            <span class="c1"># ─┘</span>
+<span class="p">)</span>
+<span class="c1"># Tổng: ~50ms 🚀 (chỉ chờ cái lâu nhất)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1">// C# version — Task.WhenAll</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">userTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">GetUserAsync</span><span class="p">(</span><span class="n">userId</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">ordersTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">GetOrdersAsync</span><span class="p">(</span><span class="n">userId</span><span class="p">);</span>
+<span class="kt">var</span><span class="w"> </span><span class="n">notifsTask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">GetNotifsAsync</span><span class="p">(</span><span class="n">userId</span><span class="p">);</span>
+
+<span class="k">await</span><span class="w"> </span><span class="n">Task</span><span class="p">.</span><span class="n">WhenAll</span><span class="p">(</span><span class="n">userTask</span><span class="p">,</span><span class="w"> </span><span class="n">ordersTask</span><span class="p">,</span><span class="w"> </span><span class="n">notifsTask</span><span class="p">);</span>
+<span class="c1">// 3 queries chạy song song, chỉ tốn time = max(3 cái)</span>
+</code></pre></div>
+
+<h3 id="voi-cpu-bound">Với CPU-bound:</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Cần nhiều tay hơn → multiprocessing</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
+
+<span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="c1"># 4 &quot;đầu bếp&quot; cùng thái rau</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">process_image</span><span class="p">,</span> <span class="n">images</span><span class="p">))</span>
+</code></pre></div>
+
+<hr />
+<h2 id="cach-nhan-biet-trong-thuc-te">🧪 Cách nhận biết trong thực tế</h2>
+<h3 id="buoc-1-check-cpu-usage">Bước 1: Check CPU usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Linux/Mac</span>
+top<span class="w"> </span>-p<span class="w"> </span>&lt;pid&gt;
+
+<span class="c1"># Hoặc dùng htop cho đẹp</span>
+htop
+</code></pre></div>
+
+<h3 id="buoc-2-oc-ket-qua">Bước 2: Đọc kết quả</h3>
+<div class="codehilite"><pre><span></span><code>Kịch bản 1: CPU = 95-100%
+→ CPU-bound. App đang &quot;thái rau&quot; liên tục.
+→ Giải pháp: optimize algorithm, thêm cores.
+
+Kịch bản 2: CPU = 3-10% nhưng response time = 2 giây  
+→ I/O-bound. App đang &quot;đứng chờ nồi sôi&quot;.
+→ Giải pháp: async, caching, optimize queries.
+</code></pre></div>
+
+<h3 id="buoc-3-profile-code-neu-can">Bước 3: Profile code (nếu cần)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Đo thời gian từng phần</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;SELECT ...&quot;</span><span class="p">)</span>  <span class="c1"># Nếu cái này chiếm 95% time → I/O-bound</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DB query: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>  
+<span class="n">result</span> <span class="o">=</span> <span class="n">heavy_computation</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># Nếu cái này chiếm 95% time → CPU-bound</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Computation: </span><span class="si">{</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">start</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="active-recall-tu-kiem-tra">🎯 Active Recall — Tự kiểm tra</h2>
+<p><em>Che đáp án lại, trả lời trước rồi mới mở nhé!</em></p>
+<h3 id="cau-1-database-query-la-cpu-bound-hay-io-bound">Câu 1: Database query là CPU-bound hay I/O-bound?</h3>
+<details>
+<summary>👉 Xem đáp án</summary>
+
+**I/O-bound** ⏳  
+CPU gửi query đến database server rồi **đứng chờ** kết quả trả về qua network. Giống như anh đầu bếp order nguyên liệu rồi chờ shipper giao — tay anh rảnh, chỉ chờ thôi.
+
+</details>
+
+<h3 id="cau-2-nen-file-zip-la-loai-nao">Câu 2: Nén file zip là loại nào?</h3>
+<details>
+<summary>👉 Xem đáp án</summary>
+
+**CPU-bound** 🔪  
+CPU phải đọc từng byte, tìm pattern, tính toán compression algorithm liên tục. Giống thái rau — tay bận không ngừng.
+
+</details>
+
+<h3 id="cau-3-api-goi-service-ben-ngoai-roi-cho-response-la-loai-nao">Câu 3: API gọi service bên ngoài rồi chờ response là loại nào?</h3>
+<details>
+<summary>👉 Xem đáp án</summary>
+
+**I/O-bound** ⏳  
+CPU gửi HTTP request rồi **ngồi chờ** response. Network latency là bottleneck, không phải CPU. Giống gọi điện order đồ — anh chỉ chờ người ta giao.
+
+</details>
+
+<h3 id="cau-4-khi-cpu-chi-5-ma-app-van-cham-bottleneck-o-au">Câu 4: Khi CPU chỉ 5% mà app vẫn chậm, bottleneck ở đâu?</h3>
+<details>
+<summary>👉 Xem đáp án</summary>
+
+**Bottleneck ở I/O** — database chậm, network latency cao, disk I/O chậm, hoặc đang chờ external service respond.
+
+CPU rảnh (5%) = CPU **muốn** làm nhưng **không có gì để làm** vì đang chờ data từ bên ngoài. Giải pháp: **async/await**, caching, optimize queries, connection pooling — KHÔNG phải upgrade CPU.
+
+</details>
+
+<h3 id="cau-5-bonus-anh-co-1-api-endpoint-ma">Câu 5 (Bonus): Anh có 1 API endpoint mà:</h3>
+<ul>
+<li>Nhận ảnh upload từ user</li>
+<li>Lưu vào S3</li>
+<li>Resize thành 3 kích thước</li>
+<li>Lưu metadata vào DB</li>
+<li>Trả response</li>
+</ul>
+<p><strong>Phần nào CPU-bound? Phần nào I/O-bound?</strong></p>
+<details>
+<summary>👉 Xem đáp án</summary>
+
+| Bước | Loại | Giải thích |
+|------|------|------------|
+| Upload ảnh từ user | ⏳ I/O | Chờ network nhận data |
+| Lưu vào S3 | ⏳ I/O | Chờ S3 API respond |
+| **Resize 3 kích thước** | 🔪 **CPU** | **CPU xử lý pixel — đây là phần CPU-bound duy nhất!** |
+| Lưu metadata vào DB | ⏳ I/O | Chờ DB write |
+| Trả response | ⏳ I/O | Gửi qua network |
+
+👉 4/5 bước là I/O-bound. Chỉ resize ảnh là CPU-bound.  
+👉 Nên dùng async cho I/O steps, và có thể offload resize sang background worker.
+
+</details>
+
+<hr />
+<h2 id="so-o-tong-ket">🗺️ Sơ đồ tổng kết</h2>
+<div class="codehilite"><pre><span></span><code>                    App chậm?
+                       │
+            ┌──────────┴──────────┐
+            │                     │
+       CPU = 100%?          CPU = 5-10%?
+            │                     │
+      🔪 CPU-bound          ⏳ I/O-bound
+            │                     │
+    ┌───────┴───────┐    ┌───────┴───────┐
+    │               │    │               │
+ Optimize      Add more  Use async/   Caching
+ algorithm     cores     await         
+                         │               
+                    Connection        
+                    pooling           
+</code></pre></div>
+
+<hr />
+<h2 id="bai-tiep-theo">📚 Bài tiếp theo</h2>
+<p>→ <strong>Bài 2: async/await — Cơ chế "đầu bếp thông minh" hoạt động thế nào?</strong></p>
+<p>Sẽ đi sâu vào event loop, coroutine, và tại sao <code>await</code> không block thread.</p>
+<hr />
+<blockquote>
+<p>💬 <em>"Biết được task của mình là CPU-bound hay I/O-bound là bước đầu tiên để optimize đúng chỗ. Đừng mua dao mới (upgrade CPU) khi vấn đề là anh đang đứng nhìn nồi nước sôi."</em></p>
+</blockquote>
+        </div>
+    </div>
+    <div class="footer">
+        <a href="https://www.linkedin.com/in/phudatnguyen-dotnet-developer/" target="_blank" rel="noopener">🔗 LinkedIn — Phú Đạt Nguyễn</a>
+    </div>
+</body>
+</html>
