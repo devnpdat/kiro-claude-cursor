@@ -1,6 +1,13 @@
+---
+title: "Bài 6: Caching Strategy — Redis Patterns, Cache Invalidation & Chống Stampede"
+description: "Các chiến lược caching với Redis dành cho senior .NET backend engineer: cache-aside, read-through, write-through, write-behind. Phân tích cache invalidation, TTL, và giải pháp chống cache stampede để hệ thống .NET luôn nhanh và ổn định."
+tags: [redis, caching, cache-patterns, cache-invalidation, performance, dotnet, distributed-cache]
+keywords: [Redis caching, cache-aside, cache invalidation, cache stampede, distributed cache, .NET Redis, caching strategy, TTL, Redis patterns, cache trong .NET]
+---
+
 # Bài 6: Caching Strategy — Redis patterns, Invalidation, Stampede
 
-> Dành cho: anh Đạt — thợ code có thâm niên 🔧
+> Dành cho: kỹ sư backend .NET 🔧
 > Ngày: 2026-07-10
 > Chủ đề: Cache-aside, read-through, write-through, cache invalidation, stampede
 > Ẩn dụ xuyên suốt: 🧊 **Tủ đông của quán phở**
@@ -9,7 +16,7 @@
 
 ## 🎯 Tổng quan — Tại sao phải cache?
 
-Quán phở anh Đạt đông khách. Mỗi lần có khách hỏi "Còn phở không?", anh chạy vào bếp, mở nồi xem, chạy ra báo. Làm vậy 500 lần/ngày → mệt, chậm.
+Quán phở của bạn đông khách. Mỗi lần có khách hỏi "Còn phở không?", bạn chạy vào bếp, mở nồi xem, chạy ra báo. Làm vậy 500 lần/ngày → mệt, chậm.
 
 **Giải pháp**: Chuẩn bị sẵn 1 **tờ giấy ghi số lượng phở còn lại**, treo ở quầy. Khách hỏi → nhìn tờ giấy 1 cái là xong.
 
@@ -344,7 +351,7 @@ Dùng cho: xếp hạng, rate limiting (timestamp làm score).
 
 ---
 
-## 🎯 5. Cache trong return-home — Áp dụng thế nào?
+## 🎯 5. Cache trong ứng dụng — Áp dụng thế nào?
 
 ### Cache danh mục (ít thay đổi)
 

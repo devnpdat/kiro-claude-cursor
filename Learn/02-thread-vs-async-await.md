@@ -1,6 +1,13 @@
+---
+title: "Bài 2: Thread vs Async/Await — Await Có Tạo Thread Mới Không? (Spoiler: KHÔNG!)"
+description: "Hiểu tận gốc sự khác biệt giữa System.Threading.Thread và async/await trong .NET. Senior .NET backend engineer sẽ thấy rõ cơ chế state machine, thread pool starvation, và khi nào async/await thực sự phát huy sức mạnh."
+tags: [dotnet, async-await, threading, thread-pool, performance, concurrency]
+keywords: [async await, threading, thread pool starvation, .NET concurrency, state machine, async programming, async/await trong .NET, thread pool, lập trình bất đồng bộ]
+---
+
 # 🧵 Bài 2: Thread vs Async/Await — "Await có tạo thread mới không?" (Spoiler: KHÔNG!)
 
-> **Dành cho: anh Đạt — thợ code có thâm niên**
+> **Dành cho:** kỹ sư backend .NET
 > 📅 Ngày: 2026-07-10
 > 🏷️ Tags: `async/await` `threading` `performance` `.NET` `concurrency`
 
@@ -409,5 +416,3 @@ Là khi **tất cả thread trong pool đều bị block** (bởi .Result/.Wait(
 ---
 
 > 💬 *"async/await không phải magic. Nó là state machine + I/O completion port + thread pool scheduling. Hiểu được bản chất thì debug production issue nhanh hơn gấp 10 lần."*
->
-> — Ghi chú của anh Đạt, thợ code có thâm niên 🛠️

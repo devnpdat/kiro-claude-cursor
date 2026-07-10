@@ -1,6 +1,13 @@
+---
+title: "Bài 4: Kafka — Cấu Hình Thế Nào Cho Tối Ưu? Producer/Consumer Tuning & Partition Strategy"
+description: "Tối ưu cấu hình Kafka cho hệ thống .NET backend: phân tích producer tuning (acks, batching, compression), consumer tuning (session timeout, fetch size), và chiến lược partition hợp lý. Senior .NET developer sẽ có công thức cấu hình Kafka chuẩn."
+tags: [kafka, messaging, distributed-systems, producer, consumer, optimization, dotnet]
+keywords: [Kafka configuration, producer tuning, consumer tuning, partition strategy, Kafka optimization, .NET Kafka, event streaming, message queue, Kafka cấu hình, tối ưu Kafka]
+---
+
 # Bài 4: Kafka — Cấu hình thế nào cho tối ưu?
 
-> Dành cho: anh Đạt — thợ code có thâm niên 🔧
+> Dành cho: kỹ sư backend .NET 🔧
 > Ngày: 2026-07-10
 > Chủ đề: Kafka core concepts, producer/consumer tuning, partition strategy
 > Ẩn dụ xuyên suốt: 🚌 **Bến xe buýt trung tâm**
@@ -130,7 +137,7 @@ var config = new ProducerConfig
 - `linger.ms` cao hơn → dồn được nhiều hơn nhưng **tăng latency**
 - `CompressionType.Snappy`: giảm ~60-70% dung lượng, CPU cost thấp
 
-> **Ví dụ return-home**: Khi push batch trạng thái đơn hàng, set `linger.ms=10` để gom nhiều event cùng lúc → giảm tải cho Kafka.
+> **Ví dụ thực tế**: Khi push batch trạng thái đơn hàng, set `linger.ms=10` để gom nhiều event cùng lúc → giảm tải cho Kafka.
 
 ### c) `idempotence` — Gửi trùng message
 
@@ -150,7 +157,7 @@ Kết hợp với `acks=all` → **Exactly-Once semantics** cho producer.
 var config = new ConsumerConfig
 {
     BootstrapServers = "kafka:9092",
-    GroupId = "return-home-order-processor",
+    GroupId = "order-processor",
     EnableAutoCommit = false,  // Tự commit hay không?
     AutoOffsetReset = AutoOffsetReset.Earliest  // Bắt đầu từ đầu nếu chưa có offset
 };
@@ -213,7 +220,7 @@ Số partition = Số consumer tối đa trong group × hệ số parallel
 
 | Kịch bản | Số partition | Lý do |
 |---|---|---|
-| return-home: event order | 6 | 3 consumer × 2 (dự phòng scale) |
+| Hệ thống xử lý đơn hàng: event order | 6 | 3 consumer × 2 (dự phòng scale) |
 | Log system (log 1tr msg/s) | 24 | 8 broker × 3 partition/broker |
 | Payment (cần thứ tự theo order) | 12 | 6 consumer, dùng key=orderId |
 
@@ -246,9 +253,9 @@ Với key = OrderId → tất cả event của 1 order vào **cùng 1 partition*
 
 ---
 
-## 🔁 5. Kafka trong return-home — Cấu hình thực tế
+## 🔁 5. Kafka trong ứng dụng — Cấu hình thực tế
 
-Giả sử return-home dùng Kafka cho:
+Giả sử ứng dụng e-commerce dùng Kafka cho:
 - `order-return-created`: khi khách tạo yêu cầu trả hàng
 - `order-return-approved`: khi duyệt trả
 - `order-return-received`: khi kho nhận hàng
@@ -277,7 +284,7 @@ services.AddSingleton<IConsumer<string, OrderReturnEvent>>(_ =>
     new ConsumerBuilder<string, OrderReturnEvent>(new ConsumerConfig
     {
         BootstrapServers = _config["Kafka:BootstrapServers"],
-        GroupId = "return-home-order-processor",
+        GroupId = "order-processor",
         EnableAutoCommit = false,
         AutoOffsetReset = AutoOffsetReset.Earliest,
         MaxPollIntervalMs = 300000,  // 5 phút
@@ -306,15 +313,15 @@ Cách kiểm tra:
 ```bash
 # Dùng kafka-consumer-groups
 kafka-consumer-groups --bootstrap-server kafka:9092 \
-  --group return-home-order-processor \
+  --group order-processor \
   --describe
 ```
 
 Output:
 ```
 GROUP                     TOPIC              PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG
-return-home-order-processor order-return-created 0          45              100             55
-return-home-order-processor order-return-created 1          30              80              50
+order-processor order-return-created 0          45              100             55
+order-processor order-return-created 1          30              80              50
 ```
 
 ### Các metrics khác

@@ -1,9 +1,16 @@
+---
+title: "Bài 3: Scale Vertical vs Horizontal — Nâng Cấp Máy Hay Thêm Máy? K8s Pod Sizing & HPA"
+description: "So sánh vertical scaling và horizontal scaling trong kiến trúc microservices với Kubernetes. Senior .NET backend engineer học cách tính toán pod sizing, cấu hình HPA, và chiến lược scale phù hợp cho hệ thống .NET trên K8s."
+tags: [k8s, kubernetes, scaling, vertical-scaling, horizontal-scaling, hpa, dotnet]
+keywords: [vertical scaling, horizontal scaling, K8s pod sizing, HPA, Kubernetes scaling, microservices, .NET on Kubernetes, scale kubernetes, pod autoscaling]
+---
+
 # Bài 3: Scale — Nâng cấp máy hay thêm máy? K8s bao nhiêu pod?
 
-> Dành cho: anh Đạt — thợ code có thâm niên  
+> Dành cho: kỹ sư backend .NET  
 > Ngày: 2026-07-10  
 > Chủ đề: Vertical vs Horizontal Scaling, K8s Pod Sizing, HPA  
-> Ẩn dụ xuyên suốt: 🍜 **Quán Phở Anh Đạt**
+> Ẩn dụ xuyên suốt: 🍜 **Quán phở**
 
 ---
 
@@ -279,7 +286,7 @@ Ví dụ thực tế:
 └─────────────────────────────────────────────────────┘
 ```
 
-> 💡 **Mẹo của thợ code có thâm niên**: Với .NET API chủ yếu gọi DB, gọi Redis, gọi API khác (I/O-bound) → **0.25-0.5 core, 256-512MB là đủ**. Đừng phí 2 core 2GB cho cái mà 90% thời gian nó ngồi chờ I/O.
+> 💡 **Mẹo thực tế**: Với .NET API chủ yếu gọi DB, gọi Redis, gọi API khác (I/O-bound) → **0.25-0.5 core, 256-512MB là đủ**. Đừng phí 2 core 2GB cho cái mà 90% thời gian nó ngồi chờ I/O.
 
 ---
 
@@ -677,7 +684,6 @@ Tất cả OK rồi → MỚI scale horizontal!
 ```
 
 > 💬 *"Quán phở ngon không phải vì có 100 chi nhánh, mà vì 1 tô phở nấu đã ngon sẵn. Scale code cũng vậy — optimize trước, scale sau."*
-> — Thợ code có thâm niên
 
 ---
 

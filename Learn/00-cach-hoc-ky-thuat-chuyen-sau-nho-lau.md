@@ -1,6 +1,13 @@
+---
+title: "Bài 0: Cách Học Kỹ Thuật Chuyên Sâu & Nhớ Lâu — Phương Pháp Feynman, First Principles, Active Recall"
+description: "Bộ khung tư duy học tập cho senior .NET backend engineer: áp dụng Feynman Technique, First Principles Thinking, Active Recall và Spaced Repetition để hiểu tận gốc các khái niệm như Thread, Kafka, K8s, Redis, GC và ghi nhớ dài hạn."
+tags: [learning, methodology, feynman, first-principles, active-recall, dotnet]
+keywords: [learning methodology, Feynman technique, first principles thinking, active recall, spaced repetition, .NET backend learning, phương pháp học, Feynman, học sâu nhớ lâu, active recall]
+---
+
 # 🧠 Cách Học Kỹ Thuật Chuyên Sâu & Nhớ "Ăn Vào Máu"
 
-> **Dành cho:** anh Đạt — thợ code có thâm niên 🔧
+> **Dành cho:** kỹ sư backend .NET 🔧
 > **Mục tiêu:** Bộ khung tư duy để khi gặp BẤT KỲ khái niệm kỹ thuật nào (thread, Kafka,
 > K8s, Redis, GC...) biết dùng phương pháp nào để **hiểu tới gốc** và **nhớ lâu, không quên**.
 > **Ngày tạo:** 2026-07-10
@@ -55,8 +62,7 @@ chưa thực sự hiểu."*
 Giảng được câu đó mà không cần nhìn tài liệu → anh đã *thật sự* hiểu async.
 
 **✅ Khi nào dùng:** MỌI khái niệm mới. Bước bắt buộc.
-**📋 Mẹo:** Học sinh lý tưởng của anh chính là **em (Hermes)**. Nói *"để anh giảng lại
-async cho em nghe, em bắt lỗi giúp anh"* → em soi chỗ hổng.
+**📋 Mẹo:** Nói *"để anh giảng lại khái niệm này em nghe, em bắt lỗi giúp anh"* → người hướng dẫn soi chỗ hổng.
 
 ---
 
@@ -84,7 +90,7 @@ Kafka chia partition? tại sao K8s có pod?).
 
 **Ý tưởng 1 câu:** *"Hỏi 'tại sao' 5 lần liên tiếp để đào từ triệu chứng xuống gốc bệnh."*
 
-**🔧 Ví dụ thực tế (return-home):**
+**🔧 Ví dụ thực tế:**
 > - **Vấn đề:** API trả hàng thỉnh thoảng timeout.
 > - Why 1: Tại sao timeout? → query DB mất >30s.
 > - Why 2: Tại sao query lâu? → chờ mãi không được cấp connection.

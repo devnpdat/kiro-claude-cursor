@@ -1,6 +1,13 @@
+---
+title: "Bài 1: CPU-bound vs I/O-bound — Hiểu để Không 'Đứng Chờ Nồi Sôi'"
+description: "Phân biệt rõ ràng CPU-bound và I/O-bound operations trong .NET backend. Ẩn dụ đầu bếp giúp senior .NET developer hiểu ngay khi nào nên dùng async/await, khi nào cần Task.Run, và tại sao thread pool không phải giải pháp cho I/O."
+tags: [dotnet, performance, concurrency, cpu-bound, io-bound, async]
+keywords: [CPU-bound, I/O-bound, .NET performance, async await, thread pool, backend optimization, CPU-bound vs I/O-bound, async/await trong .NET]
+---
+
 # 🧠 Bài 1: CPU-bound vs I/O-bound — Hiểu để không "đứng chờ nồi sôi"
 
-> **Dành cho:** anh Đạt — thợ code có thâm niên  
+> **Dành cho:** kỹ sư backend .NET  
 > **Ngày:** 2026-07-10  
 > **Chủ đề:** Concurrency fundamentals  
 > **Thời gian đọc:** ~10 phút

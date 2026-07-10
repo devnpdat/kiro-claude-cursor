@@ -1,6 +1,13 @@
+---
+title: "Bài 5: Database Performance — Index, Query Plan & Connection Pool Tối Ưu"
+description: "Chiến lược tối ưu SQL Server cho senior .NET backend engineer: cách chọn index phù hợp (clustered vs non-clustered), đọc execution query plan, và tinh chỉnh connection pool để tránh thắt cổ chai database trong ứng dụng .NET."
+tags: [sql-server, database, performance, index, query-plan, connection-pool, dotnet]
+keywords: [SQL Server index, query plan, connection pool, database optimization, execution plan, .NET database, index tuning, SQL Server performance, tối ưu database, chỉ mục SQL]
+---
+
 # Bài 5: Database Performance — Index, Query Plan, Connection Pool
 
-> Dành cho: anh Đạt — thợ code có thâm niên 🔧
+> Dành cho: kỹ sư backend .NET 🔧
 > Ngày: 2026-07-10
 > Chủ đề: SQL Server index, đọc query plan, tối ưu connection pool
 > Ẩn dụ xuyên suốt: 📚 **Thư viện sách**
