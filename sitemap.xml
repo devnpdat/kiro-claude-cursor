@@ -2,97 +2,97 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/00-cach-hoc-ky-thuat-chuyen-sau-nho-lau.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/01-cpu-bound-vs-io-bound.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/02-thread-vs-async-await.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/03-scale-vertical-vs-horizontal-k8s.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/04-kafka-cau-hinh-toi-uu.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/05-database-performance-index-query-plan.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/06-caching-strategy-redis.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/07-observability-metrics-logs-traces.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/08-memory-and-gc-dotnet.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/Learn/09-hardware-and-platform-cpu-gpu-ram-os.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/assets/og-image.png</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.5</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/hermes-9router.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/acp-hermes-rider-zed.html</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.6</priority>
     </url>
     <url>
         <loc>https://devnpdat.github.io/kiro-claude-cursor/feed.xml</loc>
-        <lastmod>2026-07-12</lastmod>
+        <lastmod>2026-07-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.5</priority>
     </url>

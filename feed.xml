@@ -5,7 +5,7 @@
   <subtitle>Lộ trình 9 bài học chuyên sâu: CPU/I/O-bound, Async/Await, K8s Scaling, Kafka, Database, Caching, Observability, Memory &amp; GC, Hardware &amp; Platform.</subtitle>
   <link href="https://devnpdat.github.io/kiro-claude-cursor/" rel="alternate" type="text/html"/>
   <link href="https://devnpdat.github.io/kiro-claude-cursor/feed.xml" rel="self" type="application/atom+xml"/>
-  <updated>2026-07-12T00:00:00Z</updated>
+  <updated>2026-07-19T00:00:00Z</updated>
   <author>
     <name>Phú Đạt Nguyễn</name>
     <uri>https://www.linkedin.com/in/phudatnguyen-dotnet-developer/</uri>
@@ -19,7 +19,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/09-hardware-and-platform-cpu-gpu-ram-os.html" rel="alternate" type="text/html"/>
     <summary>So sánh Core i5/i7/i9/Xeon/EPYC, vì sao server dùng Linux, cấu hình server mẫu cho .NET API, hướng dẫn yêu cầu IT cấp server, so sánh C# vs Node.js vs Python.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term=".NET"/>
     <category term="Hardware"/>
     <category term="Performance"/>
@@ -31,7 +31,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/08-memory-and-gc-dotnet.html" rel="alternate" type="text/html"/>
     <summary>GC Generations (Gen0/1/2), LOH fragmentation, ArrayPool, 5 kiểu memory leak, công cụ debug dotnet-counters và dotnet-gcdump.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term=".NET"/>
     <category term="Memory"/>
     <category term="GC"/>
@@ -43,7 +43,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/07-observability-metrics-logs-traces.html" rel="alternate" type="text/html"/>
     <summary>RED/USE metrics, Serilog structured logging với Correlation ID, OpenTelemetry distributed tracing, Grafana dashboard checklist cho backend engineer.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term=".NET"/>
     <category term="Observability"/>
     <category term="OpenTelemetry"/>
@@ -55,7 +55,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/06-caching-strategy-redis.html" rel="alternate" type="text/html"/>
     <summary>Cache-aside pattern, Cache Invalidation (TTL, Write-Through, Write-Behind), Cache Stampede prevention, Redis Sentinel/Cluster, IDistributedCache trong .NET.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term="Redis"/>
     <category term="Caching"/>
     <category term="Performance"/>
@@ -67,7 +67,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/05-database-performance-index-query-plan.html" rel="alternate" type="text/html"/>
     <summary>Clustered vs Non-Clustered index, Composite index, Query Plan đọc thế nào, N+1 problem, Connection Pool sizing, EF Core query optimization.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term="Database"/>
     <category term="SQL Server"/>
     <category term="Performance"/>
@@ -79,7 +79,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/04-kafka-cau-hinh-toi-uu.html" rel="alternate" type="text/html"/>
     <summary>Partition key, producer acks/retries/compression, consumer max.poll.records/group.id rebalance, topic sizing, Kafka in K8s, health monitoring.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term="Kafka"/>
     <category term="Messaging"/>
     <category term="Performance"/>
@@ -91,7 +91,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/03-scale-vertical-vs-horizontal-k8s.html" rel="alternate" type="text/html"/>
     <summary>Vertical vs Horizontal scaling, K8s pod sizing (requests/limits), HPA configuration, Death Spiral trap, resource quotas, khi nào pod restart không đủ.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term="Kubernetes"/>
     <category term="Scaling"/>
     <category term="K8s"/>
@@ -103,7 +103,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/02-thread-vs-async-await.html" rel="alternate" type="text/html"/>
     <summary>Sự khác biệt giữa multithreading và async/await, Thread Pool starvation, ASP.NET execution context, ConfigureAwait(false), cấm .Result/.Wait().</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term=".NET"/>
     <category term="Async"/>
     <category term="Threading"/>
@@ -115,7 +115,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/01-cpu-bound-vs-io-bound.html" rel="alternate" type="text/html"/>
     <summary>Định nghĩa CPU-bound và I/O-bound, ẩn dụ đầu bếp và lẩu thái, cách phát hiện bottleneck, TCP/IP slow start, thread vs async, Task.Run misuse trap.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term=".NET"/>
     <category term="Performance"/>
     <category term="Fundamentals"/>
@@ -127,7 +127,7 @@
     <link href="https://devnpdat.github.io/kiro-claude-cursor/Learn/00-cach-hoc-ky-thuat-chuyen-sau-nho-lau.html" rel="alternate" type="text/html"/>
     <summary>Phương pháp Feynman, First Principles, Active Recall, Spaced Repetition áp dụng vào học backend .NET. Cách xây dựng lộ trình học và tránh Tutorial Hell.</summary>
     <published>2026-07-10T00:00:00Z</published>
-    <updated>2026-07-12T00:00:00Z</updated>
+    <updated>2026-07-19T00:00:00Z</updated>
     <category term="Learning"/>
     <category term="Methodology"/>
     <category term="Career"/>
